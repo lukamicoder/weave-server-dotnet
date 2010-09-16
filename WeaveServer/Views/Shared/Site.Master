@@ -1,0 +1,27 @@
+﻿<%@ Master Language="C#" Inherits="System.Web.Mvc.ViewMasterPage" %>
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" >
+<head runat="server">
+    <link type="text/css" href="~/Content/Site.css" rel="stylesheet" />
+    <script type="text/javascript" src="../Scripts/jquery-1.4.2.min.js"></script>
+    <script type="text/javascript" src="../Scripts/jquery-ui-1.8.4.custom.min.js"></script>
+    <script type="text/javascript" src="../Scripts/helper.js"></script>
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server" />
+</head>
+<body>
+    <div id="wrapper">
+        <div id="header">
+            <div id="logo">Weave Server.NET</div>
+            <div id="logout">
+            <% if (Request.IsAuthenticated) { %>
+                <%= Html.ActionLink("Logout", "Logout", "Admin") %>
+            <% } %>               
+            </div>
+        </div>
+        <div id="content">
+            <asp:ContentPlaceHolder ID="MainContent" runat="server"></asp:ContentPlaceHolder>
+        </div>
+    </div>
+</body>
+</html>

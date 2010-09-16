@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeaveServer", "WeaveServer\WeaveServer.csproj", "{B9652398-C3B5-4C4B-A6BE-120713147A67}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave", "Weave\Weave.csproj", "{0826D506-3A67-4A33-8BEA-0A211AA9A153}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B9652398-C3B5-4C4B-A6BE-120713147A67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9652398-C3B5-4C4B-A6BE-120713147A67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9652398-C3B5-4C4B-A6BE-120713147A67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9652398-C3B5-4C4B-A6BE-120713147A67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		VisualSVNWorkingCopyRoot = .
+	EndGlobalSection
+EndGlobal
