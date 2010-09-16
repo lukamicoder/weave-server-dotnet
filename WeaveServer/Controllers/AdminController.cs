@@ -29,7 +29,9 @@ namespace WeaveServer.Controllers {
         public ActionResult Index(FormCollection form) {
             if (form.Count == 0) {
                 return Request.IsAuthenticated ? View() : View("Login");
-            } else if (FormsAuthentication.Authenticate(form["login"], form["password"])) {
+            }
+
+            if (FormsAuthentication.Authenticate(form["login"], form["password"])) {
                 FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, form["login"], DateTime.Now, DateTime.Now.AddMinutes(30), false, "User");
                 string cookieStr = FormsAuthentication.Encrypt(ticket);
                 HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr);
@@ -37,12 +39,12 @@ namespace WeaveServer.Controllers {
                 Response.Cookies.Add(cookie);
 
                 return RedirectToAction("Index", "Admin");
-            } else {
-                ViewData["errorMessage"] = "Incorrect username and/or password.";
-                ViewData["errorDisplay"] = "block";
-
-                return View("Login");
             }
+
+            ViewData["errorMessage"] = "Incorrect username and/or password.";
+            ViewData["errorDisplay"] = "block";
+
+            return View("Login");
         }
 
         public string GetUserList() {
@@ -94,7 +96,7 @@ namespace WeaveServer.Controllers {
         public ActionResult DeleteUser(FormCollection form) {
             string user = form["login"];
             string pswd = form["password"];
-            string result = "";
+            string result;
 
             if (!String.IsNullOrEmpty(user) && !String.IsNullOrEmpty(pswd)) {
                 try {

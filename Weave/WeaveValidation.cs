@@ -22,14 +22,14 @@ using System.Text.RegularExpressions;
 
 namespace Weave {
     static class WeaveValidation {
-        static Regex regex = new Regex(@"[^a-zA-Z0-9._-]");
+        static Regex _regex = new Regex(@"[^a-zA-Z0-9._-]");
 
         public static bool IsValid(string text) {
             if (string.IsNullOrEmpty(text) || text.Length > 32) {
                 return false;
             }
 
-            return !regex.IsMatch(text);
+            return !_regex.IsMatch(text);
         }
     }
 }
