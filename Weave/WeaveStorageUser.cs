@@ -42,9 +42,12 @@ namespace Weave {
 			}
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("SELECT MAX(Modified) FROM Wbo WHERE UserName = @username and Collection = @collection", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT MAX(Modified) 
+														  FROM Wbos
+														  WHERE UserId = @userid
+														  AND Collection = @collection", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
 
 					conn.Open();
@@ -65,9 +68,9 @@ namespace Weave {
 			IList<string> list = new List<string>();
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("SELECT DISTINCT(Collection) FROM Wbo WHERE UserName = @username", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand("SELECT DISTINCT(Collection) FROM Wbos WHERE UserId = @userid", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 
 					conn.Open();
 					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
@@ -93,9 +96,12 @@ namespace Weave {
 			Dictionary<string, double> dic = new Dictionary<string, double>();
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("SELECT Collection, MAX(Modified) AS Timestamp FROM Wbo WHERE UserName = @username GROUP BY Collection", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT Collection, MAX(Modified) AS Timestamp 
+														  FROM Wbos
+														  WHERE UserId = @userid
+														  GROUP BY Collection", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 
 					conn.Open();
 					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
@@ -180,7 +186,7 @@ namespace Weave {
 		}
 
 		private void AddParameters(SQLiteCommand cmd) {
-			cmd.Parameters.Add(new SQLiteParameter("@username", DbType.String));
+			cmd.Parameters.Add(new SQLiteParameter("@userid", DbType.Int32));
 			cmd.Parameters.Add(new SQLiteParameter("@collection", DbType.Int32));
 			cmd.Parameters.Add(new SQLiteParameter("@id", DbType.String));
 			cmd.Parameters.Add(new SQLiteParameter("@parentid", DbType.String));
@@ -192,7 +198,7 @@ namespace Weave {
 		}
 
 		private void StoreWbo(SQLiteCommand cmd, WeaveBasicObject wbo) {
-			cmd.Parameters["@username"].Value = UserName;
+			cmd.Parameters["@userid"].Value = UserId;
 			cmd.Parameters["@collection"].Value = WeaveCollectionDictionary.GetKey(wbo.Collection);
 			cmd.Parameters["@id"].Value = wbo.Id;
 			cmd.Parameters["@parentid"].Value = wbo.ParentId;
@@ -208,8 +214,8 @@ namespace Weave {
 			}
 
 			cmd.CommandText =
-				@"REPLACE INTO Wbo (UserName, Id, Collection, ParentId, PredecessorId, SortIndex, Modified, Payload, PayloadSize) 
-				  VALUES (@username, @id, @collection, @parentid, @predecessorid, @sortindex, @modified, @payload, @payloadsize)";
+				@"REPLACE INTO Wbos (UserId, Id, Collection, ParentId, PredecessorId, SortIndex, Modified, Payload, PayloadSize) 
+				  VALUES (@userid, @id, @collection, @parentid, @predecessorid, @sortindex, @modified, @payload, @payloadsize)";
 
 			cmd.ExecuteNonQuery();
 		}
@@ -217,7 +223,7 @@ namespace Weave {
 		private void UpdateWbo(SQLiteCommand cmd, WeaveBasicObject wbo) {
 			StringBuilder sb = new StringBuilder();
 
-			cmd.Parameters["@username"].Value = UserName;
+			cmd.Parameters["@userid"].Value = UserId;
 			cmd.Parameters["@collection"].Value = WeaveCollectionDictionary.GetKey(wbo.Collection);
 			cmd.Parameters["@id"].Value = wbo.Id;
 
@@ -248,7 +254,7 @@ namespace Weave {
 			if (sb.Length != 0) {
 				sb.Insert(0, "UPDATE Wbo SET ");
 				sb.Remove(sb.Length - 1, 1);
-				sb.Append(" WHERE UserName = @username AND Collection = @collection AND Id = @id");
+				sb.Append(" WHERE UserName = @username AND Wbo.Collection = @collection AND Wbo.Id = @id");
 
 				cmd.CommandText = sb.ToString();
 
@@ -258,9 +264,12 @@ namespace Weave {
 
 		public void DeleteWbo(string id, string collection) {
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("DELETE FROM Wbo WHERE UserName = @username AND Collection = @collection AND Id = @id", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"DELETE FROM Wbos
+														   WHERE UserId = @userid
+														   AND Collection = @collection 
+														   AND Id = @id", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 					cmd.Parameters.Add("@id", DbType.String).Value = id;
 					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection);
 
@@ -280,8 +289,10 @@ namespace Weave {
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
 			using (SQLiteCommand cmd = new SQLiteCommand(conn)) {
 				try {
-					sb.Append("DELETE FROM Wbo WHERE UserName = @username AND Collection = @collection");
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					sb.Append(@"DELETE FROM Wbos 
+								WHERE UserId = @userid
+								AND Collection = @collection");
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
 
 					if (limit != null || offset != null || sort != null) {
@@ -362,9 +373,12 @@ namespace Weave {
 			Dictionary<string, object> dic = new Dictionary<string, object>();
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("SELECT * FROM Wbo WHERE UserName = @username AND Collection = @collection AND Id = @id", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT * FROM Wbos 
+														   WHERE UserId = @userid 
+														   AND Collection = @collection 
+														   AND Id = @id", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
 					cmd.Parameters.Add("@id", DbType.String).Value = id; 
 
@@ -404,9 +418,9 @@ namespace Weave {
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
 			using (SQLiteCommand cmd = new SQLiteCommand(conn)) {
 				try {
-					sb.Append("SELECT ").Append(full ? "*" : "Id").Append(" FROM Wbo WHERE UserName = @username AND Collection = @collection");
+					sb.Append("SELECT ").Append(full ? "*" : "Id").Append(" FROM Wbos WHERE UserId = @userid AND Collection = @collection");
 
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
  
 					if (id != null) {

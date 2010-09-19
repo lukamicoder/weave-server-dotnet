@@ -29,6 +29,7 @@ using System.Text;
 namespace Weave {
 	abstract class WeaveStorage {
 		public string ConnString { get; private set; }
+		public int UserId { get; private set; }
 
 		protected void SetupDatabase() {
 			string dir = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
@@ -37,7 +38,7 @@ namespace Weave {
 				dir = AppDomain.CurrentDomain.BaseDirectory;
 			}
 
-			string dbName = dir + Path.DirectorySeparatorChar + "weave_db";
+			string dbName = dir + Path.DirectorySeparatorChar + "weave.db";
 
 			ConnString = "Data Source=" + dbName + ";";
 
@@ -57,20 +58,22 @@ namespace Weave {
 		private void CreateTables() {
 			const string createStatement = @"
 				  BEGIN TRANSACTION;
-				  CREATE TABLE Wbo (UserName text,
-									Id text,
-									Collection int,
-									ParentId text,
-									PredecessorId int,
-									Modified real,
-									SortIndex int,
-									Payload text,
-									PayloadSize int,
-									primary key (UserName, Collection, Id));				
-				  CREATE TABLE Users (UserName text, Md5 text, primary key (UserName));
-				  CREATE INDEX parentindex ON Wbo (UserName, ParentId);
-				  CREATE INDEX predecessorindex ON Wbo (UserName, PredecessorId);
-				  CREATE INDEX modifiedindex ON Wbo (UserName, Collection, Modified);
+				  CREATE TABLE Wbos (UserId integer NOT NULL,
+									Id text NOT NULL,
+									Collection integer NOT NULL,
+									ParentId text NULL,
+									PredecessorId integer NULL,
+									Modified real NULL,
+									SortIndex integer NULL,
+									Payload text NULL,
+									PayloadSize integer NULL,
+									primary key (UserId, Collection, Id));				
+				  CREATE TABLE Users (UserId integer NOT NULL PRIMARY KEY AUTOINCREMENT, 
+									  UserName text NOT NULL, 
+									  Md5 text NOT NULL);
+				  CREATE INDEX parentindex ON Wbos (UserId, ParentId);
+				  CREATE INDEX predecessorindex ON Wbos (UserId, PredecessorId);
+				  CREATE INDEX modifiedindex ON Wbos (UserId, Collection, Modified);;
 				  END TRANSACTION;";
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
@@ -89,14 +92,17 @@ namespace Weave {
 			bool result = false;
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT UserName FROM Users WHERE UserName = @username AND Md5 = @md5", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT Users.UserId 
+														   FROM Users 
+														   WHERE Users.UserName = @username AND Md5 = @md5", conn)) {
 				try {
 					cmd.Parameters.Add("@username", DbType.String).Value = userName;
 					cmd.Parameters.Add("@md5", DbType.String).Value = HashString(password);
 
 					conn.Open();
 					object obj = cmd.ExecuteScalar();
-					if (obj != null) {
+					if (obj != DBNull.Value && obj != null) {
+						UserId = Convert.ToInt32(obj);
 						result = true;
 					}
 				} catch (SQLiteException x) {
@@ -111,7 +117,10 @@ namespace Weave {
 		public double GetStorageTotal(string userName) {
 			double result = 0;
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("SELECT ROUND(SUM(LENGTH(Payload))/1024) FROM Wbo WHERE UserName = @username", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT ROUND(SUM(LENGTH(Wbos.Payload))/1024) 
+														   FROM Wbos
+														   INNER JOIN Users on Wbos.UserId = Users.UserId
+														   WHERE Users.UserName = @username", conn)) {
 				try {
 					cmd.Parameters.Add("@username", DbType.String).Value = userName;
 
@@ -133,7 +142,11 @@ namespace Weave {
 			var dic = new Dictionary<string, long>();
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("SELECT Collection, COUNT(*) AS ct FROM Wbo WHERE UserName = @username GROUP BY Collection", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT Wbos.Collection, COUNT(*) AS ct 
+														   FROM Wbos
+														   INNER JOIN Users on Wbos.UserId = Users.UserId
+														   WHERE Users.UserName = @username 
+														   GROUP BY Wbos.Collection", conn)) {
 				try {
 					cmd.Parameters.Add("@username", DbType.String).Value = userName;
 

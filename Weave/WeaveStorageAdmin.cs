@@ -31,10 +31,10 @@ namespace Weave {
 
 		public List<WeaveUserListItem> GetUserList() {
 			List<WeaveUserListItem> result = new List<WeaveUserListItem>();
-			string cmdString = @"SELECT Users.UserName AS User, ROUND(SUM(LENGTH(Wbo.Payload))/1024) AS Payload, MAX(Wbo.Modified) AS Date 
+			string cmdString = @"SELECT Users.UserName AS User, ROUND(SUM(LENGTH(Wbos.Payload))/1024) AS Payload, MAX(Wbos.Modified) AS Date 
 								 FROM Users
-								 LEFT JOIN Wbo ON Users.UserName = Wbo.UserName
-								 GROUP BY User";
+								 LEFT JOIN Wbos ON Users.UserId = Wbos.UserId
+								 GROUP BY Users.UserId";
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
 			using (SQLiteCommand cmd = new SQLiteCommand(cmdString, conn)) {
 				try {
@@ -70,8 +70,9 @@ namespace Weave {
 
 			if (!String.IsNullOrEmpty(userName)) {
 				string commandText = @"BEGIN TRANSACTION;
-									   DELETE FROM Users WHERE UserName = @username;
-									   DELETE FROM Wbo WHERE UserName = @username;
+									   DELETE FROM Wbos
+									   WHERE  UserId = (SELECT UserId FROM Users WHERE UserName =  @username);
+									   DELETE FROM Users WHERE Users.UserName = @username;
 									   END TRANSACTION";
 
 				using (SQLiteConnection conn = new SQLiteConnection(ConnString))
