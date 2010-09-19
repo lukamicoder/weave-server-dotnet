@@ -60,7 +60,7 @@ namespace Weave {
 				  BEGIN TRANSACTION;
 				  CREATE TABLE Wbos (UserId integer NOT NULL,
 									Id text NOT NULL,
-									Collection integer NOT NULL,
+									Collection smallint NOT NULL,
 									ParentId text NULL,
 									PredecessorId integer NULL,
 									Modified real NULL,
@@ -155,7 +155,7 @@ namespace Weave {
 						if (reader.HasRows) {
 							while (reader.Read()) {
 								if (reader["Collection"] != DBNull.Value) {
-									string coll = WeaveCollectionDictionary.GetValue((int)reader["Collection"]);
+									string coll = WeaveCollectionDictionary.GetValue((short)reader["Collection"]);
 									dic.Add(coll, (long)reader["ct"]);
 								}
 							}

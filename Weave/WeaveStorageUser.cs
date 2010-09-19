@@ -48,7 +48,7 @@ namespace Weave {
 														  AND Collection = @collection", conn)) {
 				try {
 					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
+					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
 
 					conn.Open();
 					Object obj = cmd.ExecuteScalar();
@@ -77,7 +77,7 @@ namespace Weave {
 						if (reader.HasRows) {
 							while (reader.Read()) {
 								if (reader["Collection"] != DBNull.Value) {
-									string coll = WeaveCollectionDictionary.GetValue((int)reader["Collection"]);
+									string coll = WeaveCollectionDictionary.GetValue((short)reader["Collection"]);
 									list.Add(coll);
 								}
 							}
@@ -108,7 +108,7 @@ namespace Weave {
 						if (reader.HasRows) {
 							while (reader.Read()) {
 								if (reader["Collection"] != DBNull.Value && reader["Timestamp"] != null) {
-									string coll = WeaveCollectionDictionary.GetValue((int)reader["Collection"]);
+									string coll = WeaveCollectionDictionary.GetValue((short)reader["Collection"]);
 									dic.Add(coll, (double)reader["Timestamp"]);
 								}
 							}
@@ -187,7 +187,7 @@ namespace Weave {
 
 		private void AddParameters(SQLiteCommand cmd) {
 			cmd.Parameters.Add(new SQLiteParameter("@userid", DbType.Int32));
-			cmd.Parameters.Add(new SQLiteParameter("@collection", DbType.Int32));
+			cmd.Parameters.Add(new SQLiteParameter("@collection", DbType.Int16));
 			cmd.Parameters.Add(new SQLiteParameter("@id", DbType.String));
 			cmd.Parameters.Add(new SQLiteParameter("@parentid", DbType.String));
 			cmd.Parameters.Add(new SQLiteParameter("@predecessorid", DbType.String));
@@ -271,7 +271,7 @@ namespace Weave {
 				try {
 					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 					cmd.Parameters.Add("@id", DbType.String).Value = id;
-					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection);
+					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection);
 
 					conn.Open();
 					cmd.ExecuteNonQuery();
@@ -293,7 +293,7 @@ namespace Weave {
 								WHERE UserId = @userid
 								AND Collection = @collection");
 					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
+					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
 
 					if (limit != null || offset != null || sort != null) {
 						IList<WeaveBasicObject> wboList = RetrieveWboList(collection, id, false, parentId, predecessorId, newer, older, sort, 
@@ -379,7 +379,7 @@ namespace Weave {
 														   AND Id = @id", conn)) {
 				try {
 					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
+					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
 					cmd.Parameters.Add("@id", DbType.String).Value = id; 
 
 					conn.Open();
@@ -421,7 +421,7 @@ namespace Weave {
 					sb.Append("SELECT ").Append(full ? "*" : "Id").Append(" FROM Wbos WHERE UserId = @userid AND Collection = @collection");
 
 					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int32).Value = WeaveCollectionDictionary.GetKey(collection); 
+					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
  
 					if (id != null) {
 						sb.Append(" AND Id = @id");

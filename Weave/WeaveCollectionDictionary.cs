@@ -22,7 +22,7 @@ using System.Collections.Generic;
 
 namespace Weave {
     static class WeaveCollectionDictionary {
-        private static Dictionary<int, string> _key = new Dictionary<int, string>
+        private static Dictionary<short, string> _key = new Dictionary<short, string>
                                                       {
                                                               {1, "clients"},
                                                               {2, "crypto"},
@@ -36,21 +36,21 @@ namespace Weave {
                                                               {10, "passwords"}
                                                           };
 
-        public static Dictionary<int, string> Key {
+        public static Dictionary<short, string> Key {
             get { return _key; }
         }
 
-        public static string GetValue(int key) {
+        public static string GetValue(short key) {
             string value;
             _key.TryGetValue(key, out value);
 
             return value;
         }
 
-        public static int GetKey(string value) {
-            int key = 0;
+        public static short GetKey(string value) {
+            short key = 0;
 
-            foreach (KeyValuePair<int, string> pair in _key) {
+            foreach (KeyValuePair<short, string> pair in _key) {
                 if (pair.Value == value) {
                     key = pair.Key;
                     break;
