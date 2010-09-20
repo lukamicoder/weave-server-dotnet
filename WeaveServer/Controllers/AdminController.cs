@@ -31,8 +31,10 @@ namespace WeaveServer.Controllers {
                 return Request.IsAuthenticated ? View() : View("Login");
             }
 
-            if (FormsAuthentication.Authenticate(form["login"], form["password"])) {
-                FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, form["login"], DateTime.Now, DateTime.Now.AddMinutes(30), false, "User");
+            string user = form["login"];
+            string pswd = form["password"];
+            if (FormsAuthentication.Authenticate(user, pswd)) {
+                FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, "User");
                 string cookieStr = FormsAuthentication.Encrypt(ticket);
                 HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr);
                 cookie.Path = FormsAuthentication.FormsCookiePath;

@@ -22,24 +22,23 @@ using System;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Weave {
     public class WeaveRequest {
-        public string LoginName { get; set; }
-        public string Password { get; set; }
+        private string _loginName;
+        public string Password { get; private set; }
 
-        public string Version { get; set; }
-        public string UserName { get; set; }
-        public string Function { get; set; }
-        public string Id { get; set; }
-        public string Collection { get; set; }
+        public string Version { get; private set; }
+        public string UserName { get; private set; }
+        public string Function { get; private set; }
+        public string Id { get; private set; }
+        public string Collection { get; private set; }
 
-        public string RequestMethod { get; set; }
-        public NameValueCollection ServerVariables { get; set; }
-        public NameValueCollection QueryString { get; set; }
-        public double? HttpX { get; set; }
-        public string Content { get; set; }
+        public string RequestMethod { get; private set; }
+        public NameValueCollection ServerVariables { get; private set; }
+        public NameValueCollection QueryString { get; private set; }
+        public double? HttpX { get; private set; }
+        public string Content { get; private set; }
         public bool IsValid { get; private set; }
         public WeaveErrorCodes ErrorMessage { get; private set; }
         public int ErrorCode { get; private set; }
@@ -71,10 +70,9 @@ namespace Weave {
             if (IsValid) {
                 Validate();
             }
-
         }
 
-        public void ProcessUrl(string rawUrl) {
+        private void ProcessUrl(string rawUrl) {
             int end = rawUrl.ToLower().IndexOf('?');
             if (end > -1) {
                 rawUrl = rawUrl.Substring(0, end);
@@ -117,12 +115,11 @@ namespace Weave {
 
                     string[] parts = s.Split(new[] { ':' });
                     if (parts.Length == 2) {
-                        LoginName = parts[0].ToLower();
+                        _loginName = parts[0].ToLower();
                         Password = parts[1];
                     }
                 }
-            }
-          
+            }         
         }
 
         private void GetContent(Stream inputStream ) {
@@ -141,7 +138,7 @@ namespace Weave {
             }
         }
 
-        public void Validate() {
+        private void Validate() {
             if (Version != "0.5" && Version != "1.0") {
                 ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
                 ErrorCode = 404;
@@ -174,7 +171,7 @@ namespace Weave {
                 ErrorMessage = WeaveErrorCodes.MissingPassword;
                 ErrorCode = 401;
                 IsValid = false;
-            } else if (UserName != LoginName) {
+            } else if (UserName != _loginName) {
                 ErrorMessage = WeaveErrorCodes.UseridPathMismatch;
                 ErrorCode = 401;
                 IsValid = false;
