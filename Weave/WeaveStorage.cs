@@ -117,7 +117,7 @@ namespace Weave {
 		public double GetStorageTotal(string userName) {
 			double result = 0;
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT ROUND(SUM(LENGTH(Wbos.Payload))/1024) 
+			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT SUM(Wbos.PayloadSize) 
 														   FROM Wbos
 														   INNER JOIN Users on Wbos.UserId = Users.UserId
 														   WHERE Users.UserName = @username", conn)) {
@@ -135,7 +135,7 @@ namespace Weave {
 				}
 			}
 
-			return result;
+			return result / 1024;
 		}
 
 		public Dictionary<string, long> GetCollectionListWithCounts(string userName) {

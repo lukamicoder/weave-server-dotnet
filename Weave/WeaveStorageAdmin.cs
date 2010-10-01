@@ -31,7 +31,7 @@ namespace Weave {
 
 		public List<WeaveUserListItem> GetUserList() {
 			List<WeaveUserListItem> result = new List<WeaveUserListItem>();
-			string cmdString = @"SELECT Users.UserName AS User, ROUND(SUM(LENGTH(Wbos.Payload))/1024) AS Payload, MAX(Wbos.Modified) AS Date 
+			string cmdString = @"SELECT Users.UserName AS User, SUM(Wbos.PayloadSize) AS Payload, MAX(Wbos.Modified) AS Date 
 								 FROM Users
 								 LEFT JOIN Wbos ON Users.UserId = Wbos.UserId
 								 GROUP BY Users.UserId";
@@ -45,7 +45,7 @@ namespace Weave {
 								WeaveUserListItem wu = new WeaveUserListItem();
 								wu.User = (string) reader["User"];
 								if (reader["Payload"] != DBNull.Value) {
-									wu.Payload = ((double) reader["Payload"] * 1000) / 1024;
+									wu.Payload = ((long) reader["Payload"] * 1000) / 1024 /1024;
 								}
 								if (reader["Date"] != DBNull.Value) {
 									wu.Date = 1000 * (double) reader["Date"];
