@@ -29,9 +29,9 @@ namespace Weave {
 			SetupDatabase();
 		}
 
-		public List<WeaveUserListItem> GetUserList() {
-			List<WeaveUserListItem> result = new List<WeaveUserListItem>();
-			string cmdString = @"SELECT Users.UserName AS User, SUM(Wbos.PayloadSize) AS Payload, MAX(Wbos.Modified) AS Date 
+		public List<object> GetUserList() {
+			List<object> result = new List<object>();
+			string cmdString = @"SELECT Users.UserId, Users.UserName, SUM(Wbos.PayloadSize) AS Total, MAX(Wbos.Modified) AS Date 
 								 FROM Users
 								 LEFT JOIN Wbos ON Users.UserId = Wbos.UserId
 								 GROUP BY Users.UserId";
@@ -42,17 +42,27 @@ namespace Weave {
 					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
 						if (reader.HasRows) {
 							while (reader.Read()) {
-								WeaveUserListItem wu = new WeaveUserListItem();
-								wu.User = (string) reader["User"];
-								if (reader["Payload"] != DBNull.Value) {
-									wu.Payload = ((long) reader["Payload"] * 1000) / 1024 /1024;
+								long userId = (long)reader["UserId"];
+								string userName = (string)reader["UserName"];
+								double total;
+								string payload = "";
+								if (reader["Total"] != DBNull.Value) {
+									total = (Convert.ToDouble((long)reader["Total"]) * 1000) / 1024 / 1024;
+									if (total >= 1024) {
+										payload = Math.Round((total / 1024), 1) + "MB";
+									} else if (total > 0) {
+										payload = Math.Round(total, 1) + "KB";
+									}
 								}
+								double date;
 								if (reader["Date"] != DBNull.Value) {
-									wu.Date = 1000 * (double) reader["Date"];
+									date = 1000 * (double)reader["Date"];
 								} else {
-									wu.Date = 0;
+									date = 0;
 								}
-								result.Add(wu);
+
+
+								result.Add(new { UserId = userId, UserName = userName, Payload = payload, Date = date });
 							}
 						}
 					}
@@ -65,29 +75,25 @@ namespace Weave {
 			return result;
 		}
 
-		public bool DeleteUser(string userName) {
+		public bool DeleteUser(int userId) {
 			bool result = false;
 
-			if (!String.IsNullOrEmpty(userName)) {
-				string commandText = @"BEGIN TRANSACTION;
-									   DELETE FROM Wbos
-									   WHERE  UserId = (SELECT UserId FROM Users WHERE UserName =  @username);
-									   DELETE FROM Users WHERE Users.UserName = @username;
-									   END TRANSACTION";
+			string commandText = @"BEGIN TRANSACTION;
+								   DELETE FROM Wbos WHERE  UserId =  @userid;
+								   DELETE FROM Users WHERE Users.UserId = @userid;
+								   END TRANSACTION";
 
-				using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-				using (SQLiteCommand cmd = new SQLiteCommand(commandText, conn)) {
-					try {
-						cmd.Parameters.Add("@username", DbType.String).Value = userName;
+			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
+			using (SQLiteCommand cmd = new SQLiteCommand(commandText, conn)) {
+				try {
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = userId;
 
-						conn.Open();
-						cmd.ExecuteNonQuery();
+					conn.Open();
+					cmd.ExecuteNonQuery();
 
-						result = true;
-					}
-					catch (SQLiteException x) {
-						WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					}
+					result = true;
+				} catch (SQLiteException x) {
+					WeaveLogger.WriteMessage(x.Message, LogType.Error);
 				}
 			}
 
@@ -108,8 +114,7 @@ namespace Weave {
 						cmd.ExecuteNonQuery();
 
 						result = true;
-					}
-					catch (SQLiteException x) {
+					} catch (SQLiteException x) {
 						WeaveLogger.WriteMessage(x.Message, LogType.Error);
 					}
 				}
@@ -138,5 +143,5 @@ namespace Weave {
 
 			return result;
 		}
-	}	
+	}
 }

@@ -46,12 +46,11 @@ namespace Weave {
 			if (!dbFile.Exists) {
 				try {
 					SQLiteConnection.CreateFile(dbName);
+					CreateTables();
 				} catch (SQLiteException x) {
 					WeaveLogger.WriteMessage(x.Message, LogType.Error);
 					throw new WeaveException("Database unavailable", 503);
 				}
-
-				CreateTables();
 			}
 		}
 
@@ -62,7 +61,7 @@ namespace Weave {
 									Id text NOT NULL,
 									Collection smallint NOT NULL,
 									ParentId text NULL,
-									PredecessorId integer NULL,
+									PredecessorId text NULL,
 									Modified real NULL,
 									SortIndex integer NULL,
 									Payload text NULL,
@@ -114,20 +113,20 @@ namespace Weave {
 			return result;
 		}
 
-		public double GetStorageTotal(string userName) {
-			double result = 0;
+		public long GetStorageTotal(int userId) {
+			long result = 0;
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
 			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT SUM(Wbos.PayloadSize) 
 														   FROM Wbos
 														   INNER JOIN Users on Wbos.UserId = Users.UserId
-														   WHERE Users.UserName = @username", conn)) {
+														   WHERE Users.UserId = @userid", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = userName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = userId;
 
 					conn.Open();
 					Object obj = cmd.ExecuteScalar();
 					if (obj != null) {
-						result = (double)obj;
+						result = (long)obj;
 					}
 				} catch (SQLiteException x) {
 					WeaveLogger.WriteMessage(x.Message, LogType.Error);
@@ -138,17 +137,17 @@ namespace Weave {
 			return result / 1024;
 		}
 
-		public Dictionary<string, long> GetCollectionListWithCounts(string userName) {
+		public Dictionary<string, long> GetCollectionListWithCounts(int userId) {
 			var dic = new Dictionary<string, long>();
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
 			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT Wbos.Collection, COUNT(*) AS ct 
 														   FROM Wbos
 														   INNER JOIN Users on Wbos.UserId = Users.UserId
-														   WHERE Users.UserName = @username 
+														   WHERE Users.UserId = @userid 
 														   GROUP BY Wbos.Collection", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = userName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = userId;
 
 					conn.Open();
 					using (SQLiteDataReader reader = cmd.ExecuteReader()) {

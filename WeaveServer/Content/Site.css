@@ -24,8 +24,8 @@ body {font-family:arial,helvetica,sans; background-color:#464646; font-size:14px
 .JSONTable td { padding: .2em; border: solid 1px #888; vertical-align: top; }
 .JSONTable .evenRow { background: #ddd; }
 .JSONTable .oddRow { background: #fff; }
-.JSONTable .tdCell { width: 130px; padding-left: 5px; text-align: left; }
-.JSONTable .tdLoad { width: 50px; padding-left: 5px; text-align: left; }
+.JSONTable .tdCell { width: 160px; padding-left: 5px; text-align: left; }
+.JSONTable .tdLoad { width: 40px; padding-left: 5px; text-align: left; }
 .JSONTable .tdLink { width: 30px; color: #666666; text-align: center; }
 
 #dialogContent #error { color: Red; padding-bottom: 5px; text-align: center; font-size:smaller; display: none; }

@@ -26,8 +26,8 @@ using System.Web.Script.Serialization;
 
 namespace Weave {
     class WeaveBasicObject {
-        Collection<string> error = new Collection<string>();
-        JavaScriptSerializer jss = new JavaScriptSerializer();
+        Collection<string> _error = new Collection<string>();
+        JavaScriptSerializer _jss = new JavaScriptSerializer();
 
         public string Id { get; set; }
         public string Collection { get; set; }
@@ -43,14 +43,14 @@ namespace Weave {
 
         public bool Populate(string json) {
             if (json == null) {
-                error.Add("Json is null");
+                _error.Add("Json is null");
                 return false;
             }
 
-            Dictionary<string, object> dic = (Dictionary<string, object>)jss.DeserializeObject(json);
+            Dictionary<string, object> dic = (Dictionary<string, object>)_jss.DeserializeObject(json);
 
             if (dic == null || dic.Count == 0) {
-                error.Add("Unable to extract from json");
+                _error.Add("Unable to extract from json");
                 return false;
             }
 
@@ -103,30 +103,30 @@ namespace Weave {
 
         public bool Validate() {
             if (Id == null || Id.Length > 64 || Id.Contains("/")) {
-                error.Add("Invalid id");
+                _error.Add("Invalid id");
             }
 
             if (ParentId != null && ParentId.Length > 64) {
-                error.Add("Invalid parentid");
+                _error.Add("Invalid parentid");
             }
 
             if (PredecessorId != null && PredecessorId.Length > 64) {
-                error.Add("Invalid predecessorid");
+                _error.Add("Invalid predecessorid");
             }
 
             if (!Modified.HasValue) {
-                error.Add("No modification date");
+                _error.Add("No modification date");
             }
 
             if (Collection == null || Collection.Length > 64) {
-                error.Add("Invalid collection");
+                _error.Add("Invalid collection");
             }
 
             if (SortIndex.HasValue && (SortIndex > 999999999 || SortIndex < -999999999)) {
-                error.Add("Invalid sortindex");
+                _error.Add("Invalid sortindex");
             }
 
-            if (error.Count > 0) {
+            if (_error.Count > 0) {
                 return false;
             }
 
@@ -156,15 +156,15 @@ namespace Weave {
                 dic.Add("payload", Payload);
             }
 
-            return jss.Serialize(dic);
+            return _jss.Serialize(dic);
         }
 
         public Collection<string> GetError() {
-            return error;
+            return _error;
         }
 
         public void ClearError() {
-            error = new Collection<string>();
+            _error = new Collection<string>();
         }
     }
 }

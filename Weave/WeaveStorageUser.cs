@@ -27,10 +27,7 @@ using System.Text;
 
 namespace Weave {
 	class WeaveStorageUser : WeaveStorage {
-		public string UserName { get; set; }
-
-		public WeaveStorageUser(string userName) {
-			UserName = userName;
+		public WeaveStorageUser() {
 			SetupDatabase();
 		}
 
@@ -116,7 +113,7 @@ namespace Weave {
 					}
 				} catch (SQLiteException x) {
 					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
+					throw new WeaveException    ("Database unavailable", 503);
 				}
 			}
 
@@ -124,7 +121,7 @@ namespace Weave {
 		}
 
 		public Dictionary<string, long> GetCollectionListWithCounts() {
-			return GetCollectionListWithCounts(UserName);
+			return GetCollectionListWithCounts(UserId);
 		}
 
 		public void StoreOrUpdateWbo(WeaveBasicObject wbo) {
@@ -524,11 +521,7 @@ namespace Weave {
 		}
 
 		public double GetStorageTotal() {
-			return GetStorageTotal(UserName);
-		}
-
-		public bool AuthenticateUser(string password) {
-			return AuthenticateUser(UserName, password);
+			return GetStorageTotal(UserId);
 		}
 
 		public void ChangePassword(string password) {
@@ -537,9 +530,9 @@ namespace Weave {
 			}
 
 			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"UPDATE Users SET Md5 = @md5 WHERE UserName = @username", conn)) {
+			using (SQLiteCommand cmd = new SQLiteCommand(@"UPDATE Users SET Md5 = @md5 WHERE UserId = @userid", conn)) {
 				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
+					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
 					cmd.Parameters.Add("@md5", DbType.String).Value = HashString(password);
 
 					conn.Open();

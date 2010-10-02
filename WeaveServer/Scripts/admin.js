@@ -45,16 +45,16 @@ $(document).ready(function () {
     loadUserTable();
 });
 
-function openDialog(type, value) {
+function openDialog(type, value, value2) {
     $('#dialogContent')[0].style.color = '';
     if (type == "del") {
         $('#dialog').dialog("option", "title", "Delete User");
         $('#dialog').dialog("option", "width", 300);
         $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close") }, "Delete": function () { deleteUser(value); } });
 
-        $('#dialogContent')[0].innerHTML = "Are you sure you want to delete " + value + "?";
+        $('#dialogContent')[0].innerHTML = "Are you sure you want to delete " + value2 + "?";
     } else if (type == "details") {
-        $('#dialog').dialog("option", "title", "User Details - " + value);
+        $('#dialog').dialog("option", "title", "User Details - " + value2);
         $('#dialog').dialog("option", "width", 250);
         $('#dialog').dialog("option", "buttons", { "OK": function () { $(this).dialog("close"); } });
     } else if (type == "new") {
@@ -80,8 +80,8 @@ function openDialog(type, value) {
     $('#dialog').dialog("open");
 }
 
-function showDetails(user) {
-    var param = [{ name: 'user', value: user}];
+function showDetails(userid, username) {
+    var param = [{ name: 'userId', value: userid}];
 
     $.ajax({
         url: "/Admin/GetUserDetails",
@@ -105,7 +105,7 @@ function showDetails(user) {
 
             $('#dialogContent')[0].innerHTML = "";
             detailsTable.loadData(rows);
-            openDialog('details', user);
+            openDialog('details', userid, username);
         },
         error: function (data) {
             openDialog("error", data.responseText);
@@ -113,8 +113,8 @@ function showDetails(user) {
     });
 }
 
-function deleteUser(user) {
-    var param = [{ name: 'user', value: user}];
+function deleteUser(userid) {
+    var param = [{ name: 'userid', value: userid}];
 
     $.ajax({
         url: "/Admin/RemoveUser",
@@ -164,8 +164,9 @@ function loadUserTable() {
             if (users != undefined) {
                 for (var i = 0; i < users.length; i++) {
                     if (users[i] != null) {
-                        var username = users[i].User;
-                        var size = users[i].FormattedPayload;
+                        var username = users[i].UserName;
+                        var id = users[i].UserId;
+                        var size = users[i].Payload;
                         if (users[i].Date > 0) {
                             var date = new Date(users[i].Date);
                             date = date.format();
@@ -175,14 +176,14 @@ function loadUserTable() {
 
                         if (date != "") {
                             var del = document.createElement("a");
-                            $(del).attr('href', "javascript:showDetails('" + username + "');");
+                            $(del).attr('href', "javascript:showDetails('" + id + "', '" + username + "');");
                             $(del).append(document.createTextNode('details'));
                         } else {
                             var del = "";
                         }
 
                         var edit = document.createElement("a");
-                        $(edit).attr('href', "javascript:openDialog('del', '" + username + "');");
+                        $(edit).attr('href', "javascript:openDialog('del', '" + id + "', '" + username + "');");
                         $(edit).append(document.createTextNode('delete'));
 
                         var row = new Array(username, size, date, del, edit);
