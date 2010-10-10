@@ -19,6 +19,7 @@
  */
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Weave {
     static class WeaveCollectionDictionary {
@@ -48,16 +49,7 @@ namespace Weave {
         }
 
         public static short GetKey(string value) {
-            short key = 0;
-
-            foreach (KeyValuePair<short, string> pair in _key) {
-                if (pair.Value == value) {
-                    key = pair.Key;
-                    break;
-                }
-            }
-
-            return key;
+            return (from pair in _key where pair.Value == value select pair.Key).FirstOrDefault();
         }
     }
 }

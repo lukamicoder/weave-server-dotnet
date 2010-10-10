@@ -26,8 +26,8 @@ using System.Web.Script.Serialization;
 
 namespace Weave {
     public class WeaveUser {
-        JavaScriptSerializer jss;
-        WeaveStorageUser db;
+        JavaScriptSerializer _jss;
+        WeaveStorageUser _db;
 
         public WeaveRequest Request { get; private set; }
         public Dictionary<string, string> Headers { get; private set; }
@@ -35,22 +35,22 @@ namespace Weave {
         public int ErrorStatusCode { get; private set; }
         public string Response { get; private set; }
 
-        double? serverTime;
+        double? _serverTime;
         public double ServerTime {
             get {
-                if (serverTime == null) {
+                if (_serverTime == null) {
                     TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-                    serverTime = Math.Round(ts.TotalSeconds, 2);
+                    _serverTime = Math.Round(ts.TotalSeconds, 2);
                 }
 
-                return serverTime.Value;
+                return _serverTime.Value;
             }
         }
 
         public WeaveUser(WeaveRequest request) {
             Request = request;
 
-            jss = new JavaScriptSerializer();
+            _jss = new JavaScriptSerializer();
 
             Headers = new Dictionary<string, string>();
             Headers.Add("Content-type", "application/json");
@@ -65,9 +65,9 @@ namespace Weave {
             }
 
             try {
-                db = new WeaveStorageUser(Request.UserName);
+                _db = new WeaveStorageUser();
 
-                if (!db.AuthenticateUser(Request.Password)) {
+                if (!_db.AuthenticateUser(Request.UserName, Request.Password)) {
                     Response = ReportProblem("Authentication failed", 401);
                     return;
                 }
@@ -108,13 +108,13 @@ namespace Weave {
         private void RequestGetInfo() {
             switch (Request.Collection) {
                 case "quota":
-                    Response = jss.Serialize(new[] { db.GetStorageTotal() });
+                    Response = _jss.Serialize(new[] { _db.GetStorageTotal() });
                     break;
                 case "collections":
-                    Response = jss.Serialize(db.GetCollectionListWithTimestamps());
+                    Response = _jss.Serialize(_db.GetCollectionListWithTimestamps());
                     break;
                 case "collection_counts":
-                    Response = jss.Serialize(db.GetCollectionListWithCounts());
+                    Response = _jss.Serialize(_db.GetCollectionListWithCounts());
                     break;
                 default:
                     Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
@@ -129,7 +129,7 @@ namespace Weave {
 
             if (Request.Id != null) {
                 try {
-                    wboList = db.RetrieveWboList(Request.Collection, Request.Id, true, null, null, null, null, null, null, null, null, null, null);
+                    wboList = _db.RetrieveWboList(Request.Collection, Request.Id, true, null, null, null, null, null, null, null, null, null, null);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
@@ -157,7 +157,7 @@ namespace Weave {
                 }
 
                 try {
-                    wboList = db.RetrieveWboList(Request.Collection, null, full == "1" ? true : false,
+                    wboList = _db.RetrieveWboList(Request.Collection, null, full == "1" ? true : false,
                                                     Request.QueryString["parentid"],
                                                     Request.QueryString["predecessorid"],
                                                     Request.QueryString["newer"],
@@ -189,7 +189,7 @@ namespace Weave {
                                 if (full == "1") {
                                     sb.Append(wbo.ToJson());
                                 } else {
-                                    sb.Append(jss.Serialize(wbo.Id));
+                                    sb.Append(_jss.Serialize(wbo.Id));
                                 }
                             }
                             sb.Append("]");
@@ -200,7 +200,7 @@ namespace Weave {
                                 if (full == "1") {
                                     output = wbo.ToJson();
                                 } else {
-                                    output = jss.Serialize(wbo.Id);
+                                    output = _jss.Serialize(wbo.Id);
                                 }
 
                                 int length = Encoding.ASCII.GetByteCount(output);
@@ -216,7 +216,7 @@ namespace Weave {
                                 if (full == "1") {
                                     sb.Append(wbo.ToJson().Replace("/\n/", "\u000a"));
                                 } else {
-                                    sb.Append(jss.Serialize(wbo.Id));
+                                    sb.Append(_jss.Serialize(wbo.Id));
                                 }
 
                                 sb.Append("\n");
@@ -232,7 +232,7 @@ namespace Weave {
         }
 
         private void RequestPut() {
-            if (Request.HttpX != null && db.GetMaxTimestamp(Request.Collection) <= Request.HttpX.Value) {
+            if (Request.HttpX != null && _db.GetMaxTimestamp(Request.Collection) <= Request.HttpX.Value) {
                 Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
@@ -253,7 +253,7 @@ namespace Weave {
 
             if (wbo.Validate()) {
                 try {
-                    db.StoreOrUpdateWbo(wbo);
+                    _db.StoreOrUpdateWbo(wbo);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
@@ -264,14 +264,14 @@ namespace Weave {
             }
 
             if (wbo.Modified != null) {
-                 Response = jss.Serialize(wbo.Modified.Value);
+                 Response = _jss.Serialize(wbo.Modified.Value);
             }
         }
 
         private void RequestPost() {
             if (Request.Function == "password") {
                 try {
-                    db.ChangePassword(Request.Content);
+                    _db.ChangePassword(Request.Content);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
@@ -281,7 +281,7 @@ namespace Weave {
                 return;
             }
 
-            if (Request.HttpX != null && db.GetMaxTimestamp(Request.Collection) <= Request.HttpX.Value) {
+            if (Request.HttpX != null && _db.GetMaxTimestamp(Request.Collection) <= Request.HttpX.Value) {
                 Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
@@ -290,7 +290,7 @@ namespace Weave {
             var resultList = new WeaveResultList();
             var wboList = new Collection<WeaveBasicObject>();
 
-            object obj = jss.DeserializeObject(Request.Content);
+            object obj = _jss.DeserializeObject(Request.Content);
             object[] objArray;
 
             if (obj != null) {
@@ -339,7 +339,7 @@ namespace Weave {
 
             if (wboList.Count > 0) {
                 try {
-                    db.StoreOrUpdateWboList(wboList, resultList);
+                    _db.StoreOrUpdateWboList(wboList, resultList);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
@@ -350,23 +350,23 @@ namespace Weave {
         }
 
         private void RequestDelete() {
-            if (Request.HttpX != null && db.GetMaxTimestamp(Request.Collection) <= Request.HttpX.Value) {
+            if (Request.HttpX != null && _db.GetMaxTimestamp(Request.Collection) <= Request.HttpX.Value) {
                 ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
             if (Request.Id != null) {
                 try {
-                    db.DeleteWbo(Request.Collection, Request.Id);
+                    _db.DeleteWbo(Request.Collection, Request.Id);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
                 }
 
-                 Response = jss.Serialize(ServerTime);
+                 Response = _jss.Serialize(ServerTime);
             } else {
                 try {
-                    db.DeleteWboList(Request.Collection, null,
+                    _db.DeleteWboList(Request.Collection, null,
                                 Request.QueryString["parentid"],
                                 Request.QueryString["predecessorid"],
                                 Request.QueryString["newer"],
@@ -383,7 +383,7 @@ namespace Weave {
                     return;
                 }
 
-                 Response = jss.Serialize(ServerTime);
+                 Response = _jss.Serialize(ServerTime);
             }
         }
 
@@ -409,7 +409,7 @@ namespace Weave {
 
             ErrorStatusCode = code;
 
-            return jss.Serialize(message);
+            return _jss.Serialize(message);
         }
     }
 }

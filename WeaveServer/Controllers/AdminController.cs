@@ -62,11 +62,11 @@ namespace WeaveServer.Controllers {
         }
 
         [HttpPost]
-        public string GetUserDetails(string user) {
+        public string GetUserDetails(int userId) {
             string result;
             try {
                 WeaveAdmin weaveAdmin = new WeaveAdmin();
-                result = weaveAdmin.GetCollectionListWithCounts(user);
+                result = weaveAdmin.GetCollectionListWithCounts(userId);
             } catch (WeaveException x) {
                 return "Error: " + x.Message;
             }
@@ -84,10 +84,10 @@ namespace WeaveServer.Controllers {
         }
 
         [HttpPost]
-        public string RemoveUser(string user) {
+        public string RemoveUser(int userId) {
             WeaveAdmin weaveAdmin = new WeaveAdmin();
 
-            return weaveAdmin.DeleteUser(user);
+            return weaveAdmin.DeleteUser(userId);
         }
 
         public ActionResult DeleteUser() {
@@ -104,13 +104,15 @@ namespace WeaveServer.Controllers {
                 try {
                     WeaveAdmin weaveAdmin = new WeaveAdmin();
 
-                    result =weaveAdmin.AuthenticateUser(user, pswd);
-                    if (result == "") {
-                        result = weaveAdmin.DeleteUser(user);
+                    Int64 id = weaveAdmin.AuthenticateUser(user, pswd);
+                    if (id != 0) {
+                        result = weaveAdmin.DeleteUser(id);
                         if (result == "") {
                             result = String.Format("{0} has been deleted from the database.", user);
                             ViewData["resultStyle"] = "color: Black;";
-                        } 
+                        }
+                    } else {
+                        result = "Incorrect username and/or password";
                     }
                 } catch (WeaveException x) {
                     result = x.Message;

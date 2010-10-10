@@ -21,122 +21,137 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.SQLite;
+using System.Linq;
+using Weave.Models;
 
 namespace Weave {
-	class WeaveStorageAdmin : WeaveStorage {
-		public WeaveStorageAdmin() {
-			SetupDatabase();
-		}
+    class WeaveStorageAdmin : WeaveStorage {
+        public List<object> GetUserList() {
+            List<object> result = new List<object>();
 
-		public List<WeaveUserListItem> GetUserList() {
-			List<WeaveUserListItem> result = new List<WeaveUserListItem>();
-			string cmdString = @"SELECT Users.UserName AS User, ROUND(SUM(LENGTH(Wbos.Payload))/1024) AS Payload, MAX(Wbos.Modified) AS Date 
-								 FROM Users
-								 LEFT JOIN Wbos ON Users.UserId = Wbos.UserId
-								 GROUP BY Users.UserId";
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(cmdString, conn)) {
-				try {
-					conn.Open();
-					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
-						if (reader.HasRows) {
-							while (reader.Read()) {
-								WeaveUserListItem wu = new WeaveUserListItem();
-								wu.User = (string) reader["User"];
-								if (reader["Payload"] != DBNull.Value) {
-									wu.Payload = ((double) reader["Payload"] * 1000) / 1024;
-								}
-								if (reader["Date"] != DBNull.Value) {
-									wu.Date = 1000 * (double) reader["Date"];
-								} else {
-									wu.Date = 0;
-								}
-								result.Add(wu);
-							}
-						}
-					}
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var userList = (from u in context.Users
+                                    join w in context.Wbos on u.UserId equals w.UserId
+                                    into g
+                                    select new {
+                                        u.UserId,
+                                        u.UserName,
+                                        Total = (Double?)g.Sum(p => p.PayloadSize),
+                                        Date = (Double?)g.Max(p => p.Modified)
+                                    }).ToList();
 
-			return result;
-		}
+                    foreach (var user in userList) {
+                        long userId = user.UserId;
+                        string userName = user.UserName;
+                        double total;
+                        string payload = "";
+                        if (user.Total != null) {
+                            total = (user.Total.Value * 1000) / 1024 / 1024;
+                            if (total >= 1024) {
+                                payload = Math.Round((total / 1024), 1) + "MB";
+                            } else if (total > 0) {
+                                payload = Math.Round(total, 1) + "KB";
+                            }
+                        }
+                        double date;
+                        if (user.Date != null) {
+                            date = 1000 * user.Date.Value;
+                        } else {
+                            date = 0;
+                        }
 
-		public bool DeleteUser(string userName) {
-			bool result = false;
+                        result.Add(new { UserId = userId, UserName = userName, Payload = payload, Date = date });
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
 
-			if (!String.IsNullOrEmpty(userName)) {
-				string commandText = @"BEGIN TRANSACTION;
-									   DELETE FROM Wbos
-									   WHERE  UserId = (SELECT UserId FROM Users WHERE UserName =  @username);
-									   DELETE FROM Users WHERE Users.UserName = @username;
-									   END TRANSACTION";
+            return result;
+        }
 
-				using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-				using (SQLiteCommand cmd = new SQLiteCommand(commandText, conn)) {
-					try {
-						cmd.Parameters.Add("@username", DbType.String).Value = userName;
+        public bool DeleteUser(Int64 userId) {
+            bool result = false;
 
-						conn.Open();
-						cmd.ExecuteNonQuery();
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var wboList = (from wbos in context.Wbos
+                                   join users in context.Users on wbos.UserId equals users.UserId
+                                   where users.UserId == userId
+                                   select wbos).ToList();
 
-						result = true;
-					}
-					catch (SQLiteException x) {
-						WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					}
-				}
-			}
+                    foreach (var del in wboList) {
+                        context.DeleteObject(del);
+                    }
 
-			return result;
-		}
+                    var user = (from u in context.Users
+                                where u.UserId == userId
+                                select u).SingleOrDefault();
 
-		public bool CreateUser(string userName, string password) {
-			bool result = false;
+                    if (user != null) {
+                        context.DeleteObject(user);
+                    }
 
-			if (!String.IsNullOrEmpty(userName)) {
-				using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-				using (SQLiteCommand cmd = new SQLiteCommand(@"INSERT INTO Users (UserName, Md5) VALUES (@username, @md5)", conn)) {
-					try {
-						cmd.Parameters.Add("@username", DbType.String).Value = userName;
-						cmd.Parameters.Add("@md5", DbType.String).Value = HashString(password);
+                    int x = context.SaveChanges();
 
-						conn.Open();
-						cmd.ExecuteNonQuery();
+                    if (x != 0) {
+                        result = true;
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
 
-						result = true;
-					}
-					catch (SQLiteException x) {
-						WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					}
-				}
-			}
+            return result;
+        }
 
-			return result;
-		}
+        public bool CreateUser(string userName, string password) {
+            bool result = false;
 
-		public bool IsUniqueUserName(string userName) {
-			bool result = false;
+            if (!String.IsNullOrEmpty(userName)) {
+                using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                    try {
+                        string hash = HashString(password);
+                        User user = new User { UserName = userName, Md5 = hash };
+                        context.Users.AddObject(user);
 
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT UserName FROM Users WHERE UserName = @username", conn)) {
-				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = userName;
+                        int x = context.SaveChanges();
 
-					conn.Open();
-					object obj = cmd.ExecuteScalar();
-					if (obj == null) {
-						result = true;
-					}
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-				}
-			}
+                        if (x != 0) {
+                            result = true;
+                        }
+                    } catch (EntityException x) {
+                        WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                        throw new WeaveException("Database unavailable.", 503);
+                    }
+                }
+            }
 
-			return result;
-		}
-	}	
+            return result;
+        }
+
+        public bool IsUniqueUserName(string userName) {
+            bool result = false;
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var id = (from u in context.Users
+                              where u.UserName == userName
+                              select u.UserId).SingleOrDefault();
+
+                    if (id == 0) {
+                        result = true;
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return result;
+        }
+    }
 }

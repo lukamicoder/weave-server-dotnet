@@ -20,39 +20,37 @@
 
 using System;
 using System.Web.Script.Serialization;
+using Weave.Models;
+using System.Linq;
 
 namespace Weave {
     public class WeaveAdmin {
-        JavaScriptSerializer jss;
-        WeaveStorageAdmin db;
+        JavaScriptSerializer _jss;
+        WeaveStorageAdmin _db;
 
         public WeaveAdmin() {
-            jss = new JavaScriptSerializer();
-            db = new WeaveStorageAdmin();
+            _jss = new JavaScriptSerializer();
+            _db = new WeaveStorageAdmin();
         }
 
-        public string GetCollectionListWithCounts(string userName) {
-            var dic =  db.GetCollectionListWithCounts(userName);
-            return jss.Serialize(dic);
+        public string GetCollectionListWithCounts(Int64 userId) {
+            var dic = _db.GetCollectionListWithCounts(userId);
+            return _jss.Serialize(dic);
         }
 
         public string GetUserList() {
             try {
-                var list = db.GetUserList();
-                return jss.Serialize(list);
+                var list = _db.GetUserList();
+                return _jss.Serialize(list);
             } catch (WeaveException ex) {
                 return ex.Message;
             }
         }
 
-        public string DeleteUser(string userName) {
+        public string DeleteUser(Int64 userId) {
             string msg = "";
-            if (String.IsNullOrEmpty(userName)) {
-                msg = "Username cannot be blank.";
-            } else if (!WeaveValidation.IsValid(userName)) {
-                msg = "Incorrect username.";
-            } else if (!db.DeleteUser(userName)) {
-                msg = String.Format("There was an error on deleting {0}.", userName);
+            if (!_db.DeleteUser(userId)) {
+                msg = "There was an error on deleting user.";
             }
 
             return msg;
@@ -64,25 +62,23 @@ namespace Weave {
                 msg = "Username and password cannot be blank.";
             } else if (!WeaveValidation.IsValid(userName)) {
                 msg = "Username can only consist of characters (A-Z or a-z), numbers (0-9), and these special characters: _ -.";
-            } else if (!db.IsUniqueUserName(userName)) {
+            } else if (!_db.IsUniqueUserName(userName)) {
                 msg = "Username already exists.";
-            } else if (!db.CreateUser(userName, password)) {
+            } else if (!_db.CreateUser(userName, password)) {
                 msg = String.Format("There was an error on adding {0}.", userName);
             }
 
             return msg;
         }
 
-        public string AuthenticateUser(string userName, string password) {
+        public Int64 AuthenticateUser(string userName, string password) {
             try {
-                if (!db.AuthenticateUser(userName, password)) {
-                    return "Incorrect username and/or password.";
-                }            
-            } catch (WeaveException wex) {
-                return wex.Message;
-            }
-            
-            return "";
+                if (_db.AuthenticateUser(userName, password)) {
+                    return _db.UserId;
+                }
+            } catch (WeaveException) { }
+
+            return 0;
         }
     }
 }

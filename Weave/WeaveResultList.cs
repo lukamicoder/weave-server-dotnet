@@ -24,35 +24,35 @@ using System.Web.Script.Serialization;
 
 namespace Weave {
     class WeaveResultList {
-        JavaScriptSerializer jss = new JavaScriptSerializer();
-        Dictionary<string, object> result = new Dictionary<string, object>();
-        Collection<string> successIds;
-        Dictionary<string, Collection<string>> failedIds;
+        JavaScriptSerializer _jss = new JavaScriptSerializer();
+        Dictionary<string, object> _result = new Dictionary<string, object>();
+        Collection<string> _successIds;
+        Dictionary<string, Collection<string>> _failedIds;
 
         public Collection<string> SuccessIds {
             get {
-                if (successIds == null) {
-                    successIds = new Collection<string>();
+                if (_successIds == null) {
+                    _successIds = new Collection<string>();
                 }
 
-                return successIds;
+                return _successIds;
             }   
         }
 
         public Dictionary<string, Collection<string>> FailedIds {
             get {
-                if (failedIds == null) {
-                    failedIds = new Dictionary<string, Collection<string>>();
+                if (_failedIds == null) {
+                    _failedIds = new Dictionary<string, Collection<string>>();
                 }
 
-                return failedIds;
+                return _failedIds;
             }
         }
 
         public string ToJson() {
-            result.Add("success", successIds);
-            result.Add("failed", failedIds);
-            return jss.Serialize(result);
+            _result.Add("success", _successIds);
+            _result.Add("failed", _failedIds);
+            return _jss.Serialize(_result);
         }
     }
 }

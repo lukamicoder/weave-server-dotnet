@@ -22,533 +22,489 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
-using System.Data.SQLite;
-using System.Text;
+using System.Data.Objects;
+using System.Linq;
+using System.Transactions;
+using Weave.Models;
 
 namespace Weave {
-	class WeaveStorageUser : WeaveStorage {
-		public string UserName { get; set; }
-
-		public WeaveStorageUser(string userName) {
-			UserName = userName;
-			SetupDatabase();
-		}
-
-		public double GetMaxTimestamp(string collection) {
-			double result = 0;
-
-			if (String.IsNullOrEmpty(collection)){
-				return 0;
-			}
-
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT MAX(Modified) 
-														  FROM Wbos
-														  WHERE UserId = @userid
-														  AND Collection = @collection", conn)) {
-				try {
-					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
-
-					conn.Open();
-					Object obj = cmd.ExecuteScalar();
-					if (obj != null) {
-						result = (double)obj;
-					}
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-			
-			return Math.Round(result, 2);
-		}
-
-		public IList<string> GetCollectionList() {
-			IList<string> list = new List<string>();
-
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand("SELECT DISTINCT(Collection) FROM Wbos WHERE UserId = @userid", conn)) {
-				try {
-					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-
-					conn.Open();
-					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
-						if (reader.HasRows) {
-							while (reader.Read()) {
-								if (reader["Collection"] != DBNull.Value) {
-									string coll = WeaveCollectionDictionary.GetValue((short)reader["Collection"]);
-									list.Add(coll);
-								}
-							}
-						}
-					}
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-
-			return list;
-		}
-
-		public Dictionary<string, double> GetCollectionListWithTimestamps() {
-			Dictionary<string, double> dic = new Dictionary<string, double>();
-
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT Collection, MAX(Modified) AS Timestamp 
-														  FROM Wbos
-														  WHERE UserId = @userid
-														  GROUP BY Collection", conn)) {
-				try {
-					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-
-					conn.Open();
-					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
-						if (reader.HasRows) {
-							while (reader.Read()) {
-								if (reader["Collection"] != DBNull.Value && reader["Timestamp"] != null) {
-									string coll = WeaveCollectionDictionary.GetValue((short)reader["Collection"]);
-									dic.Add(coll, (double)reader["Timestamp"]);
-								}
-							}
-						}
-					}
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-
-			return dic;
-		}
-
-		public Dictionary<string, long> GetCollectionListWithCounts() {
-			return GetCollectionListWithCounts(UserName);
-		}
-
-		public void StoreOrUpdateWbo(WeaveBasicObject wbo) {
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(conn)) {
-				conn.Open();
-
-				AddParameters(cmd);
-
-				try {
-					//if there's no payload (as opposed to blank), then update the metadata
-					if (wbo.Payload != null) {
-						StoreWbo(cmd, wbo);
-					} else {
-						UpdateWbo(cmd, wbo);
-					}
-				} catch (SQLiteException e) {
-					WeaveLogger.WriteMessage(e.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-		}
-
-		public void StoreOrUpdateWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList) {
-			if (wboList != null && wboList.Count > 0) {
-				using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-				using (SQLiteCommand cmd = new SQLiteCommand(conn)) {
-					conn.Open();
-
-					AddParameters(cmd);
-
-					using (SQLiteTransaction trans = conn.BeginTransaction()) {
-						foreach (WeaveBasicObject wbo in wboList) {
-							try {
-								if (wbo.Payload != null) {
-									StoreWbo(cmd, wbo);
-								} else {
-									UpdateWbo(cmd, wbo);
-								}
-							} catch (SQLiteException e) {
-								if (wbo.Id != null) {
-									resultList.FailedIds[wbo.Id] = new Collection<string> { e.Message };
-								}
-								continue;
-							}
-
-							resultList.SuccessIds.Add(wbo.Id);
-						}
-
-						try {
-							trans.Commit();
-						} catch (SQLiteException e) {
-							WeaveLogger.WriteMessage(e.Message, LogType.Error);
-							throw new WeaveException("Database unavailable", 503);
-						}
-					}
-				}
-			}
-		}
-
-		private void AddParameters(SQLiteCommand cmd) {
-			cmd.Parameters.Add(new SQLiteParameter("@userid", DbType.Int32));
-			cmd.Parameters.Add(new SQLiteParameter("@collection", DbType.Int16));
-			cmd.Parameters.Add(new SQLiteParameter("@id", DbType.String));
-			cmd.Parameters.Add(new SQLiteParameter("@parentid", DbType.String));
-			cmd.Parameters.Add(new SQLiteParameter("@predecessorid", DbType.String));
-			cmd.Parameters.Add(new SQLiteParameter("@sortindex", DbType.Int32));
-			cmd.Parameters.Add(new SQLiteParameter("@modified", DbType.Double));
-			cmd.Parameters.Add(new SQLiteParameter("@payload", DbType.String));
-			cmd.Parameters.Add(new SQLiteParameter("@payloadsize", DbType.Int32));
-		}
-
-		private void StoreWbo(SQLiteCommand cmd, WeaveBasicObject wbo) {
-			cmd.Parameters["@userid"].Value = UserId;
-			cmd.Parameters["@collection"].Value = WeaveCollectionDictionary.GetKey(wbo.Collection);
-			cmd.Parameters["@id"].Value = wbo.Id;
-			cmd.Parameters["@parentid"].Value = wbo.ParentId;
-			cmd.Parameters["@predecessorid"].Value = wbo.PredecessorId;
-			cmd.Parameters["@payload"].Value = wbo.Payload;
-			cmd.Parameters["@payloadsize"].Value = wbo.PayloadSize();
-
-			if (wbo.SortIndex.HasValue) {
-				cmd.Parameters["@sortindex"].Value = wbo.SortIndex.Value;
-			}
-			if (wbo.Modified.HasValue) {
-				cmd.Parameters["@modified"].Value = wbo.Modified.Value;
-			}
-
-			cmd.CommandText =
-				@"REPLACE INTO Wbos (UserId, Id, Collection, ParentId, PredecessorId, SortIndex, Modified, Payload, PayloadSize) 
-				  VALUES (@userid, @id, @collection, @parentid, @predecessorid, @sortindex, @modified, @payload, @payloadsize)";
-
-			cmd.ExecuteNonQuery();
-		}
-
-		private void UpdateWbo(SQLiteCommand cmd, WeaveBasicObject wbo) {
-			StringBuilder sb = new StringBuilder();
-
-			cmd.Parameters["@userid"].Value = UserId;
-			cmd.Parameters["@collection"].Value = WeaveCollectionDictionary.GetKey(wbo.Collection);
-			cmd.Parameters["@id"].Value = wbo.Id;
-
-			if (wbo.ParentId != null) {
-				sb.Append("ParentId = @parentid").Append(",");
-				cmd.Parameters["@parentid"].Value = wbo.ParentId;
-			}
-
-			if (wbo.PredecessorId != null) {
-				sb.Append("PredecessorId = @predecessorid").Append(",");
-				cmd.Parameters["@predecessorid"].Value = wbo.PredecessorId;
-			}
-
-			if (wbo.SortIndex.HasValue) {
-				sb.Append("SortIndex = @sortindex").Append(",");
-				cmd.Parameters.Add("@sortindex", DbType.Int32).Value = wbo.SortIndex.Value;
-			}
-
-			if (wbo.ParentId != null) {
-				if (wbo.Modified.HasValue) {
-					sb.Append("Modified = @modified").Append(",");
-					cmd.Parameters["@modified"].Value = wbo.Modified.Value;
-				} else {
-					WeaveLogger.WriteMessage("Called UpdateWbo with no defined timestamp.", LogType.Error);
-				}
-			}
-
-			if (sb.Length != 0) {
-				sb.Insert(0, "UPDATE Wbo SET ");
-				sb.Remove(sb.Length - 1, 1);
-				sb.Append(" WHERE UserName = @username AND Wbo.Collection = @collection AND Wbo.Id = @id");
-
-				cmd.CommandText = sb.ToString();
-
-				cmd.ExecuteNonQuery();
-			}
-		}
-
-		public void DeleteWbo(string id, string collection) {
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"DELETE FROM Wbos
-														   WHERE UserId = @userid
-														   AND Collection = @collection 
-														   AND Id = @id", conn)) {
-				try {
-					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@id", DbType.String).Value = id;
-					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection);
-
-					conn.Open();
-					cmd.ExecuteNonQuery();
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-		}
-
-		public void DeleteWboList(string collection, string id, string parentId, string predecessorId, string newer, string older, string sort,
-								 string limit, string offset, string ids, string indexAbove, string indexBelow) {
-			StringBuilder sb = new StringBuilder();
-
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(conn)) {
-				try {
-					sb.Append(@"DELETE FROM Wbos 
-								WHERE UserId = @userid
-								AND Collection = @collection");
-					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
-
-					if (limit != null || offset != null || sort != null) {
-						IList<WeaveBasicObject> wboList = RetrieveWboList(collection, id, false, parentId, predecessorId, newer, older, sort, 
-																		  limit, offset, ids, indexAbove, indexBelow);
-						if (wboList.Count > 0) {
-							sb.Append(" AND Id IN (");
-							for (int x = 0; x < wboList.Count; x++) {
-								cmd.Parameters.Add("@id" + x, DbType.String).Value = wboList[x].Id;
-								sb.Append("@id" + x).Append(",");
-							}
-
-							sb.Remove(sb.Length - 1, 1).Append(")");
-						}
-					} else {
-						if (id != null) {
-							sb.Append(" AND Id = @id");
-							cmd.Parameters.Add("@id", DbType.String).Value = id;
-						}
-
-						if (ids != null) {
-							sb.Append(" AND Id IN (");
-							string[] idArray = ids.Split(new[] { ',' });
-							for (int x = 0; x < idArray.Length; x++) {
-								cmd.Parameters.Add("@id" + x, DbType.String).Value = idArray[x];
-								sb.Append("@id" + x).Append(",");
-							}
-
-							sb.Remove(sb.Length - 1, 1);
-							sb.Append(")");
-						}
-
-						if (parentId != null) {
-							sb.Append(" AND ParentId = @parentid");
-							cmd.Parameters.Add("@parentid", DbType.String).Value = parentId;
-						}
-
-						if (predecessorId != null) {
-							sb.Append(" AND PredecessorId = @predecessorid");
-							cmd.Parameters.Add("@predecessorid", DbType.String).Value = predecessorId;
-						}
-
-						if (indexAbove != null) {
-							sb.Append("AND SortIndex > @indexabove");
-							cmd.Parameters.Add("@indexabove", DbType.Int32).Value = Convert.ToInt32(indexAbove);
-						}
-
-						if (indexBelow != null) {
-							sb.Append(" AND SortIndex < @indexbelow");
-							cmd.Parameters.Add("@indexbelow", DbType.Int32).Value = Convert.ToInt32(indexBelow);
-						}
-
-						if (newer != null) {
-							sb.Append(" AND Modified > @newer");
-							cmd.Parameters.Add("@newer", DbType.Double).Value = Convert.ToDouble(newer);
-						}
-
-						if (older != null) {
-							sb.Append(" AND Modified < @older");
-							cmd.Parameters.Add("@older", DbType.Double).Value = Convert.ToDouble(older);
-						}
-					}
-
-					cmd.CommandText = sb.ToString();
-
-					conn.Open();
-
-					cmd.ExecuteNonQuery();
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-		}
-
-		public WeaveBasicObject RetrieveWbo(string collection, string id) {
-			WeaveBasicObject wbo = new WeaveBasicObject();
-			Dictionary<string, object> dic = new Dictionary<string, object>();
-
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"SELECT * FROM Wbos 
-														   WHERE UserId = @userid 
-														   AND Collection = @collection 
-														   AND Id = @id", conn)) {
-				try {
-					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
-					cmd.Parameters.Add("@id", DbType.String).Value = id; 
-
-					conn.Open();
-					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
-						if (reader.HasRows) {
-							while (reader.Read()) {
-								dic.Add("id", id);
-								dic.Add("collection", collection);
-								dic.Add("parentid", reader["ParentId"]);
-								dic.Add("modified", reader["Modified"]);
-								dic.Add("predecessorid", reader["PredecessorId"]);
-								dic.Add("sortindex", reader["SortIndex"]);
-								dic.Add("payload", reader["Payload"]);
-							}
-						}
-					}
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-
-			if (!wbo.Populate(dic)) {
-				throw new WeaveException(WeaveErrorCodes.InvalidWbo + "", 400);
-			}
-
-			return wbo;
-		}
-
-		public IList<WeaveBasicObject> RetrieveWboList(string collection, string id, bool full, string parentId, 
-													  string predecessorId, string newer, string older, string sort, string limit, string offset,
-													  string ids, string indexAbove, string indexBelow) {           
-			IList<WeaveBasicObject> wboList = new List<WeaveBasicObject>();
-			StringBuilder sb = new StringBuilder();
-
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(conn)) {
-				try {
-					sb.Append("SELECT ").Append(full ? "*" : "Id").Append(" FROM Wbos WHERE UserId = @userid AND Collection = @collection");
-
-					cmd.Parameters.Add("@userid", DbType.Int32).Value = UserId;
-					cmd.Parameters.Add("@collection", DbType.Int16).Value = WeaveCollectionDictionary.GetKey(collection); 
- 
-					if (id != null) {
-						sb.Append(" AND Id = @id");
-						cmd.Parameters.Add("@id", DbType.String).Value = id; 
-					}
-
-					if (ids != null) {
-						sb.Append(" AND Id IN (");
-						string[] idArray = ids.Split(new[] { ',' });
-						for (int x = 0; x < idArray.Length; x++) {
-							cmd.Parameters.Add("@id" + x, DbType.String).Value = idArray[x];
-							sb.Append("@id" + x).Append(",");
-						}
-
-						sb.Remove(sb.Length - 1, 1);
-						sb.Append(")");
-					}
-
-					if (parentId != null) {
-						sb.Append(" AND ParentId = @parentid");
-						cmd.Parameters.Add("@parentid", DbType.String).Value = parentId;
-					}
-
-					if (predecessorId != null) {
-						sb.Append(" AND PredecessorId = @predecessorid");
-						cmd.Parameters.Add("@predecessorid", DbType.String).Value = predecessorId;
-					}
-
-					if (indexAbove != null) {
-						sb.Append("AND SortIndex > @indexabove");
-						cmd.Parameters.Add("@indexabove", DbType.Int32).Value = Convert.ToInt32(indexAbove);
-					}
-
-					if (indexBelow != null) {
-						sb.Append(" AND SortIndex < @indexbelow");
-						cmd.Parameters.Add("@indexbelow", DbType.Int32).Value = Convert.ToInt32(indexBelow);
-					}
-
-					if (newer != null) {
-						sb.Append(" AND Modified > @newer");
-						cmd.Parameters.Add("@newer", DbType.Double).Value = Convert.ToDouble(newer);
-					}
-
-					if (older != null) {
-						sb.Append(" AND Modified < @older");
-						cmd.Parameters.Add("@older", DbType.Double).Value = Convert.ToDouble(older);
-					}
-
-					switch (sort) {
-						case "index":
-							sb.Append(" ORDER BY SortIndex DESC");
-							break;
-						case "newest":
-							sb.Append(" ORDER BY Modified DESC");
-							break;
-						case "oldest":
-							sb.Append(" ORDER BY Modified");
-							break;
-					}
-
-					if (limit != null) {
-						sb.Append(" LIMIT ").Append(limit);
-						if (offset != null) {
-							sb.Append(" OFFSET ").Append(offset);
-						}
-					}
-
-					cmd.CommandText = sb.ToString();
-
-					conn.Open();
-
-					using (SQLiteDataReader reader = cmd.ExecuteReader()) {
-						if (reader.HasRows) {
-							while (reader.Read()) {
-								WeaveBasicObject wbo = new WeaveBasicObject();
-								Dictionary<string, object> dic = new Dictionary<string, object>();
-
-								if (full) {
-									dic.Add("id", reader["Id"]);
-									dic.Add("collection", collection);
-									dic.Add("parentid", reader["ParentId"]);
-									dic.Add("modified", reader["Modified"]);
-									dic.Add("predecessorid", reader["PredecessorId"]);
-									dic.Add("sortindex", reader["SortIndex"]);
-									dic.Add("payload", reader["Payload"]);
-								}
-
-								wbo.Populate(dic);
-								wboList.Add(wbo);
-							}
-						}
-					}
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-
-			return wboList;
-		}
-
-		public double GetStorageTotal() {
-			return GetStorageTotal(UserName);
-		}
-
-		public bool AuthenticateUser(string password) {
-			return AuthenticateUser(UserName, password);
-		}
-
-		public void ChangePassword(string password) {
-			if (String.IsNullOrEmpty(password)) {
-				throw new WeaveException("3", 404);
-			}
-
-			using (SQLiteConnection conn = new SQLiteConnection(ConnString))
-			using (SQLiteCommand cmd = new SQLiteCommand(@"UPDATE Users SET Md5 = @md5 WHERE UserName = @username", conn)) {
-				try {
-					cmd.Parameters.Add("@username", DbType.String).Value = UserName;
-					cmd.Parameters.Add("@md5", DbType.String).Value = HashString(password);
-
-					conn.Open();
-					cmd.ExecuteNonQuery();
-				} catch (SQLiteException x) {
-					WeaveLogger.WriteMessage(x.Message, LogType.Error);
-					throw new WeaveException("Database unavailable", 503);
-				}
-			}
-		}
-	}
+    class WeaveStorageUser : WeaveStorage {
+        public double GetMaxTimestamp(string collection) {
+            double result = 0;
+
+            if (String.IsNullOrEmpty(collection)) {
+                return 0;
+            }
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    int coll = WeaveCollectionDictionary.GetKey(collection);
+                    var time = (from wbos in
+                                    (from wbos in context.Wbos
+                                     where wbos.UserId == 2 && wbos.Collection == coll
+                                     select new { wbos.Modified })
+                                group wbos by new { wbos.Modified }
+                                    into g
+                                    select new { max = g.Max(p => p.Modified) }).SingleOrDefault();
+
+                    if (time.max != null) {
+                        result = time.max.Value;
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return Math.Round(result, 2);
+        }
+
+        public IList<string> GetCollectionList() {
+            IList<string> list = new List<string>();
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var coll = (from wbos in context.Wbos
+                                where wbos.UserId == UserId
+                                select new { wbos.Collection }).Distinct();
+
+                    foreach (var c in coll) {
+                        list.Add(WeaveCollectionDictionary.GetValue(c.Collection));
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return list;
+        }
+
+        public Dictionary<string, double> GetCollectionListWithTimestamps() {
+            Dictionary<string, double> dic = new Dictionary<string, double>();
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var coll = from wbos in context.Wbos
+                               where wbos.UserId == 2
+                               group wbos by new { wbos.Collection }
+                                   into g
+                                   select new {
+                                       Collection = (Int16?)g.Key.Collection,
+                                       Timestamp = g.Max(p => p.Modified)
+                                   };
+
+                    foreach (var c in coll) {
+                        dic.Add(WeaveCollectionDictionary.GetValue(c.Collection.Value), c.Timestamp.Value);
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return dic;
+        }
+
+        public Dictionary<string, long> GetCollectionListWithCounts() {
+            return GetCollectionListWithCounts(UserId);
+        }
+
+        public void StoreOrUpdateWbo(WeaveBasicObject wbo) {
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    Wbo modelWbo = wbo.GetModelWbo();
+                    modelWbo.UserId = UserId;
+
+                    var wboToUpdate = (from w in context.Wbos
+                                       where w.UserId == UserId &&
+                                             w.Collection == modelWbo.Collection &&
+                                             w.Id == modelWbo.Id
+                                       select w).SingleOrDefault();
+
+                    //if there's no payload (as opposed to blank), then update the metadata
+                    if (wbo.Payload != null) {
+                        if (wboToUpdate == null) {
+                            context.Wbos.AddObject(modelWbo);
+                        } else {
+                            wboToUpdate.Modified = modelWbo.Modified;
+                            wboToUpdate.ParentId = modelWbo.ParentId;
+                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
+                            wboToUpdate.SortIndex = modelWbo.SortIndex;
+                            wboToUpdate.Payload = modelWbo.Payload;
+                            wboToUpdate.PayloadSize = modelWbo.PayloadSize;
+                        }
+                    } else {
+                        if (modelWbo.ParentId != null) {
+                            wboToUpdate.ParentId = modelWbo.ParentId;
+                        }
+
+                        if (modelWbo.PredecessorId != null) {
+                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
+                        }
+
+                        if (modelWbo.SortIndex.HasValue) {
+                            wboToUpdate.SortIndex = modelWbo.SortIndex;
+                        }
+
+                        if (modelWbo.ParentId != null) {
+                            if (wbo.Modified.HasValue) {
+                                wboToUpdate.Modified = modelWbo.Modified;
+                            } else {
+                                WeaveLogger.WriteMessage("Called UpdateWbo with no defined timestamp.", LogType.Error);
+                            }
+                        }
+                    }
+
+                    context.SaveChanges();
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+        }
+
+        static readonly Func<WeaveContext, Int64, Int16, String, Wbo> StoreOrUpdateWboListQuery = CompiledQuery.Compile<WeaveContext, Int64, Int16, String, Wbo>(
+            (context, userId, collection, id) => (from wbos in context.Wbos
+                                                  where wbos.UserId == userId &&
+                                                        wbos.Collection == collection &&
+                                                        wbos.Id == id
+                                                  select wbos).SingleOrDefault());
+
+        public void StoreOrUpdateWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList) {
+            if (wboList != null && wboList.Count > 0) {
+                using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                    try {
+                        context.Connection.Open();
+                        using (TransactionScope transaction = new TransactionScope()) {
+
+                            foreach (WeaveBasicObject wbo in wboList) {
+                                try {
+                                    Wbo modelWbo = wbo.GetModelWbo();
+                                    modelWbo.UserId = UserId;
+
+                                    var wboToUpdate = StoreOrUpdateWboListQuery.Invoke(context, UserId, modelWbo.Collection, modelWbo.Id);
+
+                                    if (wbo.Payload != null) {
+                                        if (wboToUpdate == null) {
+                                            context.Wbos.AddObject(modelWbo);
+                                        } else {
+                                            wboToUpdate.Modified = modelWbo.Modified;
+                                            wboToUpdate.ParentId = modelWbo.ParentId;
+                                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
+                                            wboToUpdate.SortIndex = modelWbo.SortIndex;
+                                            wboToUpdate.Payload = modelWbo.Payload;
+                                            wboToUpdate.PayloadSize = modelWbo.PayloadSize;
+                                        }
+                                        context.SaveChanges();
+                                    } else {
+                                        if (modelWbo.ParentId != null) {
+                                            wboToUpdate.ParentId = modelWbo.ParentId;
+                                        }
+
+                                        if (modelWbo.PredecessorId != null) {
+                                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
+                                        }
+
+                                        if (modelWbo.SortIndex.HasValue) {
+                                            wboToUpdate.SortIndex = modelWbo.SortIndex;
+                                        }
+
+                                        if (modelWbo.ParentId != null) {
+                                            if (wbo.Modified.HasValue) {
+                                                wboToUpdate.Modified = modelWbo.Modified;
+                                            } else {
+                                                WeaveLogger.WriteMessage("Called UpdateWbo with no defined timestamp.", LogType.Error);
+                                            }
+                                        }
+
+                                        context.SaveChanges();
+                                    }
+
+                                    resultList.SuccessIds.Add(wbo.Id);
+                                } catch (UpdateException ex) {
+                                    if (wbo.Id != null) {
+                                        resultList.FailedIds[wbo.Id] = new Collection<string> { ex.Message };
+                                    }
+                                }
+                            }
+
+                            transaction.Complete();
+                            context.AcceptAllChanges();
+                        }
+                    } catch (EntityException x) {
+                        WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                        throw new WeaveException("Database unavailable.", 503);
+                    }
+                }
+            }
+        }
+
+        public bool DeleteWbo(string id, string collection) {
+            bool result = false;
+            int coll = WeaveCollectionDictionary.GetKey(collection);
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var wboToDelete = (from wbo in context.Wbos
+                                       where wbo.UserId == UserId &&
+                                             wbo.Collection == coll &&
+                                             wbo.Id == id
+                                       select wbo).SingleOrDefault();
+
+                    if (wboToDelete != null) {
+                        context.DeleteObject(wboToDelete);
+
+                        int x = context.SaveChanges();
+
+                        if (x != 0) {
+                            result = true;
+                        }
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+
+                return result;
+            }
+        }
+
+        public void DeleteWboList(string collection, string id, string parentId, string predecessorId, string newer, string older, string sort,
+                                 string limit, string offset, string ids, string indexAbove, string indexBelow) {
+
+            int coll = WeaveCollectionDictionary.GetKey(collection);
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var wbosToDelete = from wbo in context.Wbos
+                                       where wbo.UserId == UserId && wbo.Collection == coll
+                                       select wbo;
+
+                    if (id != null) {
+                        wbosToDelete = wbosToDelete.Where(p => p.Id == id);
+                    }
+
+                    if (ids != null) {
+                        string[] idArray = ids.Split(new[] { ',' });
+                        if (idArray.Length > 0) {
+                            wbosToDelete = wbosToDelete.Where(p => idArray.Contains(p.Id));
+                        }
+                    }
+
+                    if (parentId != null) {
+                        wbosToDelete = wbosToDelete.Where(p => p.ParentId == parentId);
+                    }
+
+                    if (predecessorId != null) {
+                        wbosToDelete = wbosToDelete.Where(p => p.PredecessorId == predecessorId);
+                    }
+
+                    if (indexAbove != null) {
+                        int iabove = Convert.ToInt32(indexAbove);
+                        wbosToDelete = wbosToDelete.Where(p => p.SortIndex > iabove);
+                    }
+
+                    if (indexBelow != null) {
+                        int ibelow = Convert.ToInt32(indexBelow);
+                        wbosToDelete = wbosToDelete.Where(p => p.SortIndex < ibelow);
+                    }
+
+                    if (newer != null) {
+                        double dnewer = Convert.ToDouble(newer);
+                        wbosToDelete = wbosToDelete.Where(p => p.Modified > dnewer);
+                    }
+
+                    if (older != null) {
+                        double dolder = Convert.ToDouble(older);
+                        wbosToDelete = wbosToDelete.Where(p => p.Modified < dolder);
+                    }
+
+                    switch (sort) {
+                        case "index":
+                            wbosToDelete.OrderByDescending(wbo => wbo.SortIndex);
+                            break;
+                        case "newest":
+                            wbosToDelete.OrderByDescending(wbo => wbo.Modified);
+                            break;
+                        case "oldest":
+                            wbosToDelete.OrderBy(wbo => wbo.Modified);
+                            break;
+                    }
+
+                    int lim;
+                    int off;
+                    if (limit != null && Int32.TryParse(limit, out lim) && lim > 0) {
+                        if (offset != null && Int32.TryParse(limit, out off) && off > 0) {
+                            wbosToDelete = wbosToDelete.Take(lim).Skip(off);
+                        } else {
+                            wbosToDelete = wbosToDelete.Take(lim);
+                        }
+                    }
+
+                    foreach (var wboToDelete in wbosToDelete) {
+                        context.DeleteObject(wboToDelete);
+                    }
+
+                    context.SaveChanges();
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+        }
+
+        public WeaveBasicObject RetrieveWbo(string collection, string id) {
+            WeaveBasicObject wbo = new WeaveBasicObject();
+
+            int coll = WeaveCollectionDictionary.GetKey(collection);
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var wboToGet = (from w in context.Wbos
+                                    where w.UserId == UserId && w.Collection == coll && w.Id == id
+                                    select w).SingleOrDefault();
+
+                    wbo.Id = id;
+                    wbo.Collection = collection;
+                    wbo.Id = wboToGet.Id;
+                    wbo.ParentId = wboToGet.ParentId;
+                    wbo.PredecessorId = wboToGet.PredecessorId;
+                    wbo.Modified = wboToGet.Modified;
+                    wbo.SortIndex = wboToGet.SortIndex;
+                    wbo.Payload = wboToGet.Payload;
+                    wbo.Id = wboToGet.Id;
+                    wbo.Id = wboToGet.Id;
+                    wbo.Id = wboToGet.Id;
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return wbo;
+        }
+
+        public IList<WeaveBasicObject> RetrieveWboList(string collection, string id, bool full, string parentId,
+                                                      string predecessorId, string newer, string older, string sort, string limit, string offset,
+                                                      string ids, string indexAbove, string indexBelow) {
+            IList<WeaveBasicObject> wboList = new List<WeaveBasicObject>();
+            int coll = WeaveCollectionDictionary.GetKey(collection);
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var wbosToGet = from w in context.Wbos
+                                    where w.UserId == UserId && w.Collection == coll
+                                    select w;
+
+                    if (id != null) {
+                        wbosToGet = wbosToGet.Where(p => p.Id == id);
+                    }
+
+                    if (ids != null) {
+                        string[] idArray = ids.Split(new[] { ',' });
+                        if (idArray.Length > 0) {
+                            wbosToGet = wbosToGet.Where(p => idArray.Contains(p.Id));
+                        }
+                    }
+
+                    if (parentId != null) {
+                        wbosToGet = wbosToGet.Where(p => p.ParentId == parentId);
+                    }
+
+                    if (predecessorId != null) {
+                        wbosToGet = wbosToGet.Where(p => p.PredecessorId == predecessorId);
+                    }
+
+                    if (indexAbove != null) {
+                        int iabove = Convert.ToInt32(indexAbove);
+                        wbosToGet = wbosToGet.Where(p => p.SortIndex > iabove);
+                    }
+
+                    if (indexBelow != null) {
+                        int ibelow = Convert.ToInt32(indexBelow);
+                        wbosToGet = wbosToGet.Where(p => p.SortIndex < ibelow);
+                    }
+
+                    if (newer != null) {
+                        double dnewer = Convert.ToDouble(newer);
+                        wbosToGet = wbosToGet.Where(p => p.Modified > dnewer);
+                    }
+
+                    if (older != null) {
+                        double dolder = Convert.ToDouble(older);
+                        wbosToGet = wbosToGet.Where(p => p.Modified < dolder);
+                    }
+
+                    switch (sort) {
+                        case "index":
+                            wbosToGet.OrderByDescending(wbo => wbo.SortIndex);
+                            break;
+                        case "newest":
+                            wbosToGet.OrderByDescending(wbo => wbo.Modified);
+                            break;
+                        case "oldest":
+                            wbosToGet.OrderBy(wbo => wbo.Modified);
+                            break;
+                    }
+
+                    int lim;
+                    int off;
+                    if (limit != null && Int32.TryParse(limit, out lim) && lim > 0) {
+                        if (offset != null && Int32.TryParse(limit, out off) && off > 0) {
+                            wbosToGet = wbosToGet.Take(lim).Skip(off);
+                        } else {
+                            wbosToGet = wbosToGet.Take(lim);
+                        }
+                    }
+
+                    foreach (Wbo wboToGet in wbosToGet) {
+                        WeaveBasicObject wbo = new WeaveBasicObject();
+                        if (full) {
+                            wbo.Id = id;
+                            wbo.Collection = collection;
+                            wbo.Id = wboToGet.Id;
+                            wbo.ParentId = wboToGet.ParentId;
+                            wbo.PredecessorId = wboToGet.PredecessorId;
+                            wbo.Modified = wboToGet.Modified;
+                            wbo.SortIndex = wboToGet.SortIndex;
+                            wbo.Payload = wboToGet.Payload;
+                        } else {
+                            wbo.Id = id;
+                        }
+
+                        wboList.Add(wbo);
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return wboList;
+        }
+
+        public double GetStorageTotal() {
+            return GetStorageTotal(UserId);
+        }
+
+        public void ChangePassword(string password) {
+            if (String.IsNullOrEmpty(password)) {
+                throw new WeaveException("3", 404);
+            }
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                string hash = HashString(password);
+                try {
+                    var userToGet = (from u in context.Users
+                                     where u.UserId == UserId
+                                     select u).SingleOrDefault();
+
+                    userToGet.Md5 = hash;
+
+                    context.SaveChanges();
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+        }
+    }
 }
