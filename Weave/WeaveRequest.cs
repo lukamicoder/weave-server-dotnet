@@ -24,7 +24,7 @@ using System.IO;
 using System.Text;
 
 namespace Weave {
-    public class WeaveRequest {
+    class WeaveRequest {
         private string _loginName;
         public string Password { get; private set; }
 
