@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Web.Script.Serialization;
+using Weave.Models;
 
 namespace Weave {
     class WeaveBasicObject {
@@ -165,6 +166,21 @@ namespace Weave {
 
         public void ClearError() {
             _error = new Collection<string>();
+        }
+
+        public Wbo GetModelWbo() {
+            Wbo wbo = new Wbo();
+
+            wbo.Collection = WeaveCollectionDictionary.GetKey(Collection);
+            wbo.Id = Id;
+            wbo.Modified = Modified;          
+            wbo.ParentId = ParentId;
+            wbo.Payload = Payload;
+            wbo.PayloadSize = PayloadSize();
+            wbo.PredecessorId = PredecessorId;
+            wbo.SortIndex = SortIndex;
+
+            return wbo;
         }
     }
 }

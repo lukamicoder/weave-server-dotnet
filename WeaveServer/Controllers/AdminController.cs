@@ -104,7 +104,7 @@ namespace WeaveServer.Controllers {
                 try {
                     WeaveAdmin weaveAdmin = new WeaveAdmin();
 
-                    int id = weaveAdmin.AuthenticateUser(user, pswd);
+                    Int64 id = weaveAdmin.AuthenticateUser(user, pswd);
                     if (id != 0) {
                         result = weaveAdmin.DeleteUser(id);
                         if (result == "") {

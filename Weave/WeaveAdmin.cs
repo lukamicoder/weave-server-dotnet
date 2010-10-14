@@ -20,6 +20,8 @@
 
 using System;
 using System.Web.Script.Serialization;
+using Weave.Models;
+using System.Linq;
 
 namespace Weave {
     public class WeaveAdmin {
@@ -31,7 +33,7 @@ namespace Weave {
             _db = new WeaveStorageAdmin();
         }
 
-        public string GetCollectionListWithCounts(int userId) {
+        public string GetCollectionListWithCounts(Int64 userId) {
             var dic = _db.GetCollectionListWithCounts(userId);
             return _jss.Serialize(dic);
         }
@@ -45,7 +47,7 @@ namespace Weave {
             }
         }
 
-        public string DeleteUser(int userId) {
+        public string DeleteUser(Int64 userId) {
             string msg = "";
             if (!_db.DeleteUser(userId)) {
                 msg = "There was an error on deleting user.";
@@ -69,13 +71,13 @@ namespace Weave {
             return msg;
         }
 
-        public int AuthenticateUser(string userName, string password) {
+        public Int64 AuthenticateUser(string userName, string password) {
             try {
                 if (_db.AuthenticateUser(userName, password)) {
                     return _db.UserId;
-                }            
-            } catch (WeaveException) {}
-            
+                }
+            } catch (WeaveException) { }
+
             return 0;
         }
     }

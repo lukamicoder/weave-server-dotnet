@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="2.0" xmlns:edmx="http://schemas.microsoft.com/ado/2008/10/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="WeaveModel.Store" Alias="Self" Provider="System.Data.SQLite" ProviderManifestToken="ISO8601" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+        <EntityContainer Name="WeaveModelStoreContainer">
+          <EntitySet Name="Users" EntityType="WeaveModel.Store.Users" store:Type="Tables" />
+          <EntitySet Name="Wbos" EntityType="WeaveModel.Store.Wbos" store:Type="Tables" />
+          <AssociationSet Name="FK_Wbos_0" Association="WeaveModel.Store.FK_Wbos_0">
+            <End Role="Users" EntitySet="Users" />
+            <End Role="Wbos" EntitySet="Wbos" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="Users">
+          <Key>
+            <PropertyRef Name="UserId" />
+          </Key>
+          <Property Name="UserId" Type="integer" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="UserName" Type="nvarchar" Nullable="false" MaxLength="32" />
+          <Property Name="Md5" Type="nvarchar" Nullable="false" MaxLength="32" />
+        </EntityType>
+        <EntityType Name="Wbos">
+          <Key>
+            <PropertyRef Name="UserId" />
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Collection" />
+          </Key>
+          <Property Name="UserId" Type="integer" Nullable="false" />
+          <Property Name="Id" Type="nvarchar" Nullable="false" MaxLength="64" />
+          <Property Name="Collection" Type="smallint" Nullable="false" />
+          <Property Name="ParentId" Type="nvarchar" MaxLength="64" />
+          <Property Name="PredecessorId" Type="nvarchar" MaxLength="64" />
+          <Property Name="Modified" Type="float" />
+          <Property Name="SortIndex" Type="int" />
+          <Property Name="Payload" Type="nvarchar" />
+          <Property Name="PayloadSize" Type="int" />
+        </EntityType>
+        <Association Name="FK_Wbos_0">
+          <End Role="Users" Type="WeaveModel.Store.Users" Multiplicity="1" />
+          <End Role="Wbos" Type="WeaveModel.Store.Wbos" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Users">
+              <PropertyRef Name="UserId" />
+            </Principal>
+            <Dependent Role="Wbos">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="WeaveModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
+        <EntityContainer Name="WeaveEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="Users" EntityType="WeaveModel.User" />
+          <EntitySet Name="Wbos" EntityType="WeaveModel.Wbo" />
+          <AssociationSet Name="FK_Wbos_0" Association="WeaveModel.FK_Wbos_0">
+            <End Role="Users" EntitySet="Users" />
+            <End Role="Wbos" EntitySet="Wbos" />
+          </AssociationSet>
+        </EntityContainer>
+        <EntityType Name="User">
+          <Key>
+            <PropertyRef Name="UserId" />
+          </Key>
+          <Property Name="UserId" Type="Int64" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="UserName" Type="String" Nullable="false" MaxLength="32" Unicode="true" FixedLength="false" />
+          <Property Name="Md5" Type="String" Nullable="false" MaxLength="32" Unicode="true" FixedLength="false" />
+          <NavigationProperty Name="Wbos" Relationship="WeaveModel.FK_Wbos_0" FromRole="Users" ToRole="Wbos" />
+        </EntityType>
+        <EntityType Name="Wbo">
+          <Key>
+            <PropertyRef Name="UserId" />
+            <PropertyRef Name="Id" />
+            <PropertyRef Name="Collection" />
+          </Key>
+          <Property Name="UserId" Type="Int64" Nullable="false" />
+          <Property Name="Id" Type="String" Nullable="false" MaxLength="64" Unicode="true" FixedLength="false" />
+          <Property Name="Collection" Type="Int16" Nullable="false" />
+          <Property Name="ParentId" Type="String" MaxLength="64" Unicode="true" FixedLength="false" />
+          <Property Name="PredecessorId" Type="String" MaxLength="64" Unicode="true" FixedLength="false" />
+          <Property Name="Modified" Type="Double" />
+          <Property Name="SortIndex" Type="Int32" />
+          <Property Name="Payload" Type="String" MaxLength="2147483647" Unicode="true" FixedLength="false" />
+          <Property Name="PayloadSize" Type="Int32" />
+          <NavigationProperty Name="User" Relationship="WeaveModel.FK_Wbos_0" FromRole="Wbos" ToRole="Users" />
+        </EntityType>
+        <Association Name="FK_Wbos_0">
+          <End Role="Users" Type="WeaveModel.User" Multiplicity="1" />
+          <End Role="Wbos" Type="WeaveModel.Wbo" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Users">
+              <PropertyRef Name="UserId" />
+            </Principal>
+            <Dependent Role="Wbos">
+              <PropertyRef Name="UserId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2008/09/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="WeaveModelStoreContainer" CdmEntityContainer="WeaveEntities">
+          <EntitySetMapping Name="Users"><EntityTypeMapping TypeName="WeaveModel.User"><MappingFragment StoreEntitySet="Users">
+            <ScalarProperty Name="UserId" ColumnName="UserId" />
+            <ScalarProperty Name="UserName" ColumnName="UserName" />
+            <ScalarProperty Name="Md5" ColumnName="Md5" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+          <EntitySetMapping Name="Wbos"><EntityTypeMapping TypeName="WeaveModel.Wbo"><MappingFragment StoreEntitySet="Wbos">
+            <ScalarProperty Name="UserId" ColumnName="UserId" />
+            <ScalarProperty Name="Id" ColumnName="Id" />
+            <ScalarProperty Name="Collection" ColumnName="Collection" />
+            <ScalarProperty Name="ParentId" ColumnName="ParentId" />
+            <ScalarProperty Name="PredecessorId" ColumnName="PredecessorId" />
+            <ScalarProperty Name="Modified" ColumnName="Modified" />
+            <ScalarProperty Name="SortIndex" ColumnName="SortIndex" />
+            <ScalarProperty Name="Payload" ColumnName="Payload" />
+            <ScalarProperty Name="PayloadSize" ColumnName="PayloadSize" />
+          </MappingFragment></EntityTypeMapping></EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2008/10/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams>
+      <Diagram Name="SQLiteModel">
+        <EntityTypeShape EntityType="WeaveModel.User" Width="1.5" PointX="0.75" PointY="1.5" Height="1.7879850260416672" IsExpanded="true" />
+        <EntityTypeShape EntityType="WeaveModel.Wbo" Width="1.5" PointX="3" PointY="1" Height="2.9417936197916656" IsExpanded="true" />
+        <AssociationConnector Association="WeaveModel.FK_Wbos_0" ManuallyRouted="false">
+          <ConnectorPoint PointX="2.25" PointY="2.3939925130208337" />
+          <ConnectorPoint PointX="3" PointY="2.3939925130208337" />
+        </AssociationConnector>
+      </Diagram>
+    </Diagrams>
+  </Designer>
+</edmx:Edmx>
