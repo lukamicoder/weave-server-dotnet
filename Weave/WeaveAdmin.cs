@@ -20,8 +20,6 @@
 
 using System;
 using System.Web.Script.Serialization;
-using Weave.Models;
-using System.Linq;
 
 namespace Weave {
     public class WeaveAdmin {
