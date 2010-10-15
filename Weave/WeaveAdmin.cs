@@ -78,5 +78,9 @@ namespace Weave {
 
             return 0;
         }
+
+        public void Cleanup() {
+            _db.Cleanup();
+        }
     }
 }

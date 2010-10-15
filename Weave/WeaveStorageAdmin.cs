@@ -153,5 +153,32 @@ namespace Weave {
 
             return result;
         }
+
+        public void Cleanup() {
+            //14 days
+            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+            double _deleteTime = ts.TotalSeconds - (60 * 60 * 24 * 14) * 100;
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                try {
+                    var wbosToDelete = from wbo in context.Wbos
+                                       where wbo.Modified < _deleteTime &&
+                                             (wbo.Collection == 3 ||
+                                              wbo.Collection == 4 ||
+                                              wbo.Collection == 9 ||
+                                              wbo.Payload == null)
+                                       select wbo;
+
+                    foreach (var wboToDelete in wbosToDelete) {
+                        context.DeleteObject(wboToDelete);
+                    }
+
+                    context.SaveChanges();
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+        }
     }
 }
