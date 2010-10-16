@@ -81,6 +81,12 @@ namespace Weave {
 			_connString = builder.ToString();
 
 			FileInfo dbFile = new FileInfo(dbName);
+
+			if (dbFile.Exists && dbFile.Length == 0) {
+				dbFile.Delete();
+				dbFile = new FileInfo(dbName);
+			}
+
 			if (!dbFile.Exists) {
 				try {
 					SQLiteConnection.CreateFile(dbName);
