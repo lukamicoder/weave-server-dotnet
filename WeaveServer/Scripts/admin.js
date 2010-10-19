@@ -26,19 +26,19 @@ $(document).ready(function () {
     });
 
     if ("undefined" == typeof (userTable)) {
-        var columns = new Array;
-        columns[1] = new Array("User", "tdCell", "tdCell");
-        columns[2] = new Array("Payload", "tdLoad", "tdLoad");
-        columns[3] = new Array("Last Sync Date", "tdCell", "tdCell");
-        columns[4] = new Array("&nbsp;", "", "tdLink");
-        columns[5] = new Array("&nbsp;", "", "tdLink");
+        var columns = [];
+        columns[1] = ["User", "tdCell", "tdCell"];
+        columns[2] = ["Payload", "tdLoad", "tdLoad"];
+        columns[3] = ["Last Sync Date", "tdCell", "tdCell"];
+        columns[4] = ["&nbsp;", "", "tdLink"];
+        columns[5] = ["&nbsp;", "", "tdLink"];
         userTable = new JSONTable('tableContainer', 'userTable', columns);
     }
 
     if ("undefined" == typeof (detailsTable)) {
-        var columns = new Array;
-        columns[1] = new Array("Collection", "tdCell", "tdCell");
-        columns[2] = new Array("Count", "tdLoad", "tdLoad");
+        var columns = [];
+        columns[1] = ["Collection", "tdCell", "tdCell"];
+        columns[2] = ["Count", "tdLoad", "tdLoad"];
         detailsTable = new JSONTable('dialogContent', 'detailsTable', columns);
     }
 
@@ -50,7 +50,7 @@ function openDialog(type, value, value2) {
     if (type == "del") {
         $('#dialog').dialog("option", "title", "Delete User");
         $('#dialog').dialog("option", "width", 300);
-        $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close") }, "Delete": function () { deleteUser(value); } });
+        $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close"); }, "Delete": function () { deleteUser(value); } });
 
         $('#dialogContent')[0].innerHTML = "Are you sure you want to delete " + value2 + "?";
     } else if (type == "details") {
@@ -60,7 +60,7 @@ function openDialog(type, value, value2) {
     } else if (type == "new") {
         $('#dialog').dialog("option", "title", "Add New User");
         $('#dialog').dialog("option", "width", 290);
-        $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close") }, "Submit": function () { addUser(); } });
+        $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close"); }, "Submit": function () { addUser(); } });
 
         $('#dialogContent')[0].innerHTML = "";
         $('#dialogContent').append("<div id='error'></div>");
@@ -90,13 +90,14 @@ function showDetails(userid, username) {
         type: 'POST',
         dataType: 'json',
         success: function (data) {
-            var rows = new Array;
-            if (data != undefined) {
+            var rows = new Array();
+            if (data !== undefined) {
                 for (var d in data) {
-                    if (d != null) {
-                        var row = new Array(d, data[d]);
+                    var row;
+                    if (d !== null) {
+                        row = [d, data[d]];
                     } else {
-                        var row = new Array("", "");
+                        row = ["", ""];
                     }
 
                     rows.push(row);
@@ -160,21 +161,21 @@ function loadUserTable() {
         type: 'POST',
         dataType: 'json',
         success: function (users) {
-            var rows = new Array;
-            if (users != undefined) {
+            var rows = new Array();
+            if (users !== undefined) {
                 for (var i = 0; i < users.length; i++) {
-                    if (users[i] != null) {
+                    if (users[i] !== null) {
                         var username = users[i].UserName;
                         var id = users[i].UserId;
                         var size = users[i].Payload;
+
+                        var date = "";
                         if (users[i].Date > 0) {
                             var date = new Date(users[i].Date);
                             date = date.format();
-                        } else {
-                            var date = "";
                         }
 
-                        if (date != "") {
+                        if (date !== "") {
                             var del = document.createElement("a");
                             $(del).attr('href', "javascript:showDetails('" + id + "', '" + username + "');");
                             $(del).append(document.createTextNode('details'));
@@ -186,9 +187,9 @@ function loadUserTable() {
                         $(edit).attr('href', "javascript:openDialog('del', '" + id + "', '" + username + "');");
                         $(edit).append(document.createTextNode('delete'));
 
-                        var row = new Array(username, size, date, del, edit);
+                        var row = [username, size, date, del, edit];
                     } else {
-                        var row = new Array("", "", "", "", "");
+                        var row = ["", "", "", "", ""];
                     }
 
                     rows.push(row);

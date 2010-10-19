@@ -17,28 +17,28 @@
 */
 
 function StringBuilder(value) {
-	this.strings = new Array("");
+	this.strings = [""];
 
 	this.append = function (value) {
-		if (value) {
-			this.strings[this.strings.length] = value;
-		}
-		return this;
-	}
+	    if (value) {
+	        this.strings[this.strings.length] = value;
+	    }
+	    return this;
+	};
 
 	this.clear = function () {
-		this.strings.length = 1;
-	}
+	    this.strings.length = 1;
+	};
 
 	this.removeLast = function () {
-		if (this.strings.length > 1) {
-			this.strings.splice(this.strings.length - 1, 1);
-		}
-	}
+	    if (this.strings.length > 1) {
+	        this.strings.splice(this.strings.length - 1, 1);
+	    }
+	};
 
 	this.toString = function () {
-		return this.strings.join("");
-	}
+	    return this.strings.join("");
+	};
 
 	return this;
 }
@@ -57,7 +57,7 @@ var dateFormat = function () {
 		} else {
 			ap = "PM";
 		}
-		if (currHour == 0) {
+		if (currHour === 0) {
 			currHour = 12;
 		} else if (currHour > 12) {
 			currHour = currHour - 12;
@@ -70,7 +70,7 @@ var dateFormat = function () {
 
 		return currMonth + "/" + currDate + "/" + currYear + " " + currHour + ":" + currMin + " " + ap;
 	};
-} ();
+}();
 
 Date.prototype.format = function () {
 	return dateFormat(this);
@@ -81,79 +81,79 @@ function JSONTable(containerID, tableID, columns) {
 	this.tableClass = 'JSONTable';
 
 	this.loadData = function (records) {
-		this._rowNumber = records.length;
-		this._init();
-		var rows = $('#' + tableID).find('tbody > tr').get();
-		for (var i in rows) {
-		    var record = records[i];
-			var col = 0;
-			$(rows[i]).find('td').each(function () {
-				$(this).empty();
-				if (record != null) {
-				    $(this).append(record[col]);
-				} else {
-					$(this).append('&nbsp;');
-				}
+	    this._rowNumber = records.length;
+	    this._init();
+	    var rows = $('#' + tableID).find('tbody > tr').get();
+	    for (var i in rows) {
+	        var record = records[i];
+	        var col = 0;
+	        $(rows[i]).find('td').each(function () {
+	            $(this).empty();
+	            if (record !== null) {
+	                $(this).append(record[col]);
+	            } else {
+	                $(this).append('&nbsp;');
+	            }
 
-				col++;
-			});
-		};
-	}
+	            col++;
+	        });
+	    }
+	};
 
 	this._init = function () {
-		var sb = new StringBuilder();
-		var rows = $('#' + tableID).find('tbody > tr').get();
-		if (rows.length > 0) {
-			var currentRowNumber = rows.length;
-			var diff = currentRowNumber - this._rowNumber;
+	    var sb = new StringBuilder();
+	    var rows = $('#' + tableID).find('tbody > tr').get();
+	    if (rows.length > 0) {
+	        var currentRowNumber = rows.length;
+	        var diff = currentRowNumber - this._rowNumber;
+	        var z;
+	        if (diff > 0) {
+	            for (z = 1; z < diff; z++) {
+	                $('#' + tableID).find('tbody > tr:eq(' + (currentRowNumber - z) + ')').remove();
+	            }
+	            if (this._rowNumber > 0) {
+	                $('#' + tableID).find('tbody > tr:eq(' + this._rowNumber + ')').remove();
+	            }
+	        } else if (diff < 0) {
+	            diff = Math.abs(diff);
+	            for (z = 0; z < diff; z++) {
+	                this._createRow(sb);
+	            }
+	            $('#' + tableID).find('tbody').append(sb.toString());
+	        }
 
-			if (diff > 0) {
-				for (var z = 1; z < diff; z++) {
-					$('#' + tableID).find('tbody > tr:eq(' + (currentRowNumber - z) + ')').remove();
-				}
-				if (this._rowNumber > 0) {
-					$('#' + tableID).find('tbody > tr:eq(' + this._rowNumber + ')').remove();
-				}
-			} else if (diff < 0) {
-				diff = Math.abs(diff);
-				for (var z = 0; z < diff; z++) {
-					this._createRow(sb);
-				}
-				$('#' + tableID).find('tbody').append(sb.toString());
-			}
+	        $('#' + tableID).find('tfoot > tr > td:eq(1)').empty().append(this.total);
+	    } else {
+	        var $table = $('<table/>');
+	        var table = $table.attr("class", this.tableClass)[0];
+	        table = $table.attr("id", tableID)[0];
+	        sb.append("<thead><tr>");
+	        for (var i in columns) {
+	            sb.append("<th class='").append(columns[i][1]).append("'>").append(columns[i][0]).append("</th>");
+	        }
+	        sb.append("</tr></thead>");
 
-			$('#' + tableID).find('tfoot > tr > td:eq(1)').empty().append(this.total);
-		} else {
-			var $table = $('<table/>');
-			var table = $table.attr("class", this.tableClass)[0];
-			var table = $table.attr("id", tableID)[0];
-			sb.append("<thead><tr>");
-			for (var i in columns) {
-				sb.append("<th class='").append(columns[i][1]).append("'>").append(columns[i][0]).append("</th>");
-			}
-			sb.append("</tr></thead>");
+	        sb.append("<tbody>");
+	        this._createRow(sb);
+	        for (var x = 0; x < this._rowNumber - 1; x++) {
+	            this._createRow(sb);
+	        }
+	        sb.append("</tbody>");
 
-			sb.append("<tbody>");
-			this._createRow(sb);
-			for (var x = 0; x < this._rowNumber - 1; x++) {
-				this._createRow(sb);
-			}
-			sb.append("</tbody>");
+	        $table.append(sb.toString());
+	        $('#' + containerID)[0].appendChild(table);
+	    }
 
-			$table.append(sb.toString());
-			$('#' + containerID)[0].appendChild(table);
-		}
-
-		$('#' + tableID + ' tr:odd').addClass('oddRow');
-		$('#' + tableID + ' tr:even').addClass('evenRow');
-	}
+	    $('#' + tableID + ' tr:odd').addClass('oddRow');
+	    $('#' + tableID + ' tr:even').addClass('evenRow');
+	};
 
 	this._createRow = function (sb) {
-		sb.append("<tr>");
-		for (var i in columns) {
-			sb.append("<td class='").append(columns[i][2]).append("'></td>");
-		}
-		sb.append("</tr>");
-	}
+	    sb.append("<tr>");
+	    for (var i in columns) {
+	        sb.append("<td class='").append(columns[i][2]).append("'></td>");
+	    }
+	    sb.append("</tr>");
+	};
 }
 
