@@ -1,7 +1,7 @@
 ﻿using System.Web.Mvc;
 using System.Web.Routing;
 
-namespace WeaveServerNET {
+namespace WeaveServer {
     // Note: For instructions on enabling IIS6 or IIS7 classic mode, 
     // visit http://go.microsoft.com/?LinkId=9394801
 
@@ -22,13 +22,29 @@ namespace WeaveServerNET {
             );
 
             routes.MapRoute(
+                "Cleanup",
+                "Cleanup",
+                new { controller = "Admin", action = "Cleanup" }
+            );
+
+            routes.MapRoute(
                 "Weave",
                 "{param1}/{param2}/{param3}/{param4}/{param5}",
-                new { controller = "Weave", action = "Index", param1 = UrlParameter.Optional, 
-                                                              param2 = UrlParameter.Optional, 
-                                                              param3 = UrlParameter.Optional, 
-                                                              param4 = UrlParameter.Optional, 
-                                                              param5 = UrlParameter.Optional }
+                new {
+                    controller = "Weave",
+                    action = "Index",
+                    param1 = UrlParameter.Optional,
+                    param2 = UrlParameter.Optional,
+                    param3 = UrlParameter.Optional,
+                    param4 = UrlParameter.Optional,
+                    param5 = UrlParameter.Optional
+                }
+            );
+
+            routes.MapRoute(
+                "Default",
+                "{*url}",
+                new { controller = "Shared", action = "PageNotFound" }
             );
         }
 

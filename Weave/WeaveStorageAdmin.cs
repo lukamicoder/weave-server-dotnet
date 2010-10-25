@@ -154,30 +154,39 @@ namespace Weave {
             return result;
         }
 
-        public void Cleanup() {
-            //14 days
-            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-            double deleteTime = ts.TotalSeconds - (60 * 60 * 24 * 14) * 100;
+        public int Cleanup(int days) {
+            if (days > 0) {
+                TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+                int dayinsecond = 60 * 60 * 24;
+                double deleteTime = ts.TotalSeconds - (dayinsecond * days);
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
-                try {
-                    var wbosToDelete = from wbo in context.Wbos
-                                       where wbo.Modified < deleteTime &&
-                                             (wbo.Collection == 3 ||
-                                              wbo.Collection == 4 ||
-                                              wbo.Collection == 9 ||
-                                              wbo.Payload == null)
-                                       select wbo;
+                using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                    try {
+                        var wbosToDelete = from wbo in context.Wbos
+                                           where wbo.Modified < deleteTime &&
+                                                 (wbo.Collection == 3 ||
+                                                  wbo.Collection == 4 ||
+                                                  wbo.Collection == 9 ||
+                                                  wbo.Payload == null)
+                                           select wbo;
 
-                    foreach (var wboToDelete in wbosToDelete) {
-                        context.DeleteObject(wboToDelete);
+                        int total = wbosToDelete.ToList().Count();
+
+                        foreach (var wboToDelete in wbosToDelete) {
+                            context.DeleteObject(wboToDelete);
+                        }
+
+                        context.SaveChanges();
+
+                        return total;
+                    } catch (EntityException x) {
+                        WeaveLogger.WriteMessage(x.Message, LogType.Error);
+
+                        return -1;
                     }
-
-                    context.SaveChanges();
-                } catch (EntityException x) {
-                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
-                    throw new WeaveException("Database unavailable.", 503);
                 }
+            } else {
+                return -1;
             }
         }
     }

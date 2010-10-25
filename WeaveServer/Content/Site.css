@@ -1,24 +1,26 @@
-body {font-family:arial,helvetica,sans; background-color:#464646; font-size:14px;}
+body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 14px; }
 
-#wrapper {width:600px; margin:10px auto;}
-#header {float:left; width:610px; margin-bottom:10px;}
-#logo {float:left; font-size:24px; color:#f26522; letter-spacing:-1px;}
-#logout a {float:right; padding-top:7px; margin-right:-25px; font-weight:bold; font-size:smaller; color: #ffffff; }
+#wrapper { width: 600px; margin: 10px auto; }
+#header { float: left; width: 610px; margin-bottom: 10px; }
+#logo { float: left; font-size: 24px; color: #f26522; letter-spacing: -1px; }
+#logout a { float: right; padding-top: 7px; margin-right: -25px; font-weight: bold; font-size: smaller; color: #ffffff; }
 
-#content {float:left; width:600px; padding: 15px 20px 20px 20px; background-color:#ececec; border-top:5px solid #f26522; border-bottom:10px solid #3c3c3c; }
+#content { float: left; width: 600px; padding: 15px 20px 20px 20px; background-color: #ececec; border-top: 5px solid #f26522; border-bottom: 10px solid #3c3c3c; }
 
-.addnew {float:left; font-weight:bold; padding-bottom:20px; color: #000000; }
+.addnew { float: left; font-weight: bold; padding-bottom: 20px; color: #000000; }
 
-.loginform .header { padding-bottom:15px; font-weight:bold; } 
-.loginform .row { padding-bottom:5px; } 
-.loginform .field { float: left; width:90px; text-align: left; padding-top: 3px; }
+.notfound { font-size: medium; font-weight: bold; padding-top: 20px; padding-bottom: 20px; text-align: center; }
+
+.loginform .header { padding-bottom: 15px; font-weight: bold; }
+.loginform .row { padding-bottom: 5px; }
+.loginform .field { float: left; width: 90px; text-align: left; padding-top: 3px; }
 .loginform .textbox { width: 120px; }
-.loginform .buttonbar { padding-top:10px; }
-.loginform .button { width:70px; }
-.loginform .error { color: Red; font-size:11px; padding-top: 15px;  }
+.loginform .buttonbar { padding-top: 10px; }
+.loginform .button { width: 70px; }
+.loginform .error { color: Red; font-size: 11px; padding-top: 15px; }
 
 /* JSONTable */
-.JSONTable { float:left; border: solid 1px #888; border-collapse: collapse; width: 100%; }
+.JSONTable { float: left; border: solid 1px #888; border-collapse: collapse; width: 100%; }
 .JSONTable th { padding: 0.2em; background: #2A3940; padding-top: 2px; color: #fff; font-weight: bold; border: solid 1px #888; }
 .JSONTable a { color: #000; }
 .JSONTable td { padding: .2em; border: solid 1px #888; vertical-align: top; }
@@ -28,7 +30,7 @@ body {font-family:arial,helvetica,sans; background-color:#464646; font-size:14px
 .JSONTable .tdLoad { width: 40px; padding-left: 5px; text-align: left; }
 .JSONTable .tdLink { width: 30px; color: #666666; text-align: center; }
 
-#dialogContent #error { color: Red; padding-bottom: 5px; text-align: center; font-size:smaller; display: none; }
+#dialogContent #error { color: Red; padding-bottom: 5px; text-align: center; font-size: smaller; display: none; }
 #dialogContent span { display: inline-block; width: 90px; text-align: left; padding: 5px; }
 #dialogContent #login, #dialogContent #password { position: relative; padding: 2px; width: 135px; }
 
@@ -45,7 +47,7 @@ body {font-family:arial,helvetica,sans; background-color:#464646; font-size:14px
 
 .ui-dialog { position: absolute; padding: .2em; width: 300px; overflow: hidden; }
 .ui-dialog .ui-dialog-titlebar { padding: .3em .6em; position: relative; }
-.ui-dialog .ui-dialog-content { border: 0; overflow: auto; text-align:center; padding: 10px; }
+.ui-dialog .ui-dialog-content { border: 0; overflow: auto; text-align: center; padding: 10px; }
 .ui-dialog .ui-dialog-content p { margin: 3px; }
 .ui-dialog .ui-dialog-buttonpane { border-width: 1px 0 0 0; }
 .ui-dialog .ui-dialog-buttonpane button { float: right; margin: .4em .3em .4em 0; cursor: pointer; padding: 2px; width: 70px; overflow: visible; }
