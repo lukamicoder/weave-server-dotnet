@@ -43,6 +43,18 @@ namespace Weave {
         public WeaveErrorCodes ErrorMessage { get; private set; }
         public int ErrorCode { get; private set; }
 
+        double? _requestTime;
+        public double RequestTime {
+            get {
+                if (_requestTime == null) {
+                    TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+                    _requestTime = Math.Round(ts.TotalSeconds, 2);
+                }
+
+                return _requestTime.Value;
+            }
+        }
+
         public WeaveRequest() {}
 
         public WeaveRequest(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {

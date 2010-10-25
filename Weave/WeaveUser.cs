@@ -30,37 +30,25 @@ namespace Weave {
     public class WeaveUser {
         JavaScriptSerializer _jss;
         WeaveStorageUser _db;
-        WeaveRequest _request;
+        WeaveRequest _req;
 
         public Dictionary<string, string> Headers { get; private set; }
         public string ErrorStatus { get; private set; }
         public int ErrorStatusCode { get; private set; }
         public string Response { get; private set; }
 
-        double? _serverTime;
-        public double ServerTime {
-            get {
-                if (_serverTime == null) {
-                    TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-                    _serverTime = Math.Round(ts.TotalSeconds, 2);
-                }
-
-                return _serverTime.Value;
-            }
-        }
-
         public WeaveUser(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {
-            _request = new WeaveRequest(serverVariables, queryString, rawUrl, inputStream);
+            _req = new WeaveRequest(serverVariables, queryString, rawUrl, inputStream);
 
             _jss = new JavaScriptSerializer();
 
             Headers = new Dictionary<string, string>();
             Headers.Add("Content-type", "application/json");
-            Headers.Add("X-Weave-Timestamp", ServerTime + "");
+            Headers.Add("X-Weave-Timestamp", _req.RequestTime + "");
 
-            if (!_request.IsValid) {
-                if (_request.ErrorMessage != 0) {
-                    Response = ReportProblem(_request.ErrorMessage, _request.ErrorCode);
+            if (!_req.IsValid) {
+                if (_req.ErrorMessage != 0) {
+                    Response = ReportProblem(_req.ErrorMessage, _req.ErrorCode);
                 }
 
                 return;
@@ -69,7 +57,7 @@ namespace Weave {
             try {
                 _db = new WeaveStorageUser();
 
-                if (!_db.AuthenticateUser(_request.UserName, _request.Password)) {
+                if (!_db.AuthenticateUser(_req.UserName, _req.Password)) {
                     Response = ReportProblem("Authentication failed", 401);
                     return;
                 }
@@ -78,9 +66,9 @@ namespace Weave {
                 return;
             }
 
-            switch (_request.RequestMethod) {
+            switch (_req.RequestMethod) {
                 case "GET":
-                    switch (_request.Function) {
+                    switch (_req.Function) {
                         case "info":
                             RequestGetInfo();
                             break;
@@ -108,7 +96,7 @@ namespace Weave {
         }
 
         private void RequestGetInfo() {
-            switch (_request.Collection) {
+            switch (_req.Collection) {
                 case "quota":
                     Response = _jss.Serialize(new[] { _db.GetStorageTotal() });
                     break;
@@ -129,23 +117,23 @@ namespace Weave {
             string full;
             string formatType = "json";
 
-            if (_request.Id != null) {
+            if (_req.Id != null) {
                 try {
-                    wboList = _db.RetrieveWboList(_request.Collection, _request.Id, true, null, null, null, null, null, null, null, null, null, null);
+                    wboList = _db.RetrieveWboList(_req.Collection, _req.Id, true, null, null, null, null, null, null, null, null, null, null);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
                 }
 
                 if (wboList.Count > 0) {
-                     Response = wboList[0].ToJson();
+                    Response = wboList[0].ToJson();
                 } else {
                     Response = ReportProblem("record not found", 404);
                     return;
                 }
             } else {
-                full = _request.QueryString["full"];
-                string accept = _request.ServerVariables["HTTP_ACCEPT"];
+                full = _req.QueryString["full"];
+                string accept = _req.ServerVariables["HTTP_ACCEPT"];
                 if (accept != null) {
                     if (accept.Contains("application/whoisi")) {
                         Headers.Remove("Content-type");
@@ -159,17 +147,17 @@ namespace Weave {
                 }
 
                 try {
-                    wboList = _db.RetrieveWboList(_request.Collection, null, full == "1" ? true : false,
-                                                    _request.QueryString["parentid"],
-                                                    _request.QueryString["predecessorid"],
-                                                    _request.QueryString["newer"],
-                                                    _request.QueryString["older"],
-                                                    _request.QueryString["sort"],
-                                                    _request.QueryString["limit"],
-                                                    _request.QueryString["offset"],
-                                                    _request.QueryString["ids"],
-                                                    _request.QueryString["index_above"],
-                                                    _request.QueryString["index_below"]);
+                    wboList = _db.RetrieveWboList(_req.Collection, null, full == "1" ? true : false,
+                                                    _req.QueryString["parentid"],
+                                                    _req.QueryString["predecessorid"],
+                                                    _req.QueryString["newer"],
+                                                    _req.QueryString["older"],
+                                                    _req.QueryString["sort"],
+                                                    _req.QueryString["limit"],
+                                                    _req.QueryString["offset"],
+                                                    _req.QueryString["ids"],
+                                                    _req.QueryString["index_above"],
+                                                    _req.QueryString["index_below"]);
 
                     if (wboList.Count > 0) {
                         Headers.Add("X-Weave-Records", wboList.Count + "");
@@ -226,7 +214,7 @@ namespace Weave {
                             break;
                     }
 
-                     Response = sb.ToString();
+                    Response = sb.ToString();
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                 }
@@ -234,24 +222,24 @@ namespace Weave {
         }
 
         private void RequestPut() {
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+            if (_req.HttpX != null && _db.GetMaxTimestamp(_req.Collection) <= _req.HttpX.Value) {
                 Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
             WeaveBasicObject wbo = new WeaveBasicObject();
 
-            if (!wbo.Populate(_request.Content)) {
+            if (!wbo.Populate(_req.Content)) {
                 Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
                 return;
             }
 
-            if (wbo.Id == null && _request.Id != null) {
-                wbo.Id = _request.Id;
+            if (wbo.Id == null && _req.Id != null) {
+                wbo.Id = _req.Id;
             }
 
-            wbo.Collection = _request.Collection;
-            wbo.Modified = ServerTime;
+            wbo.Collection = _req.Collection;
+            wbo.Modified = _req.RequestTime;
 
             if (wbo.Validate()) {
                 try {
@@ -266,24 +254,24 @@ namespace Weave {
             }
 
             if (wbo.Modified != null) {
-                 Response = _jss.Serialize(wbo.Modified.Value);
+                Response = _jss.Serialize(wbo.Modified.Value);
             }
         }
 
         private void RequestPost() {
-            if (_request.Function == "password") {
+            if (_req.Function == "password") {
                 try {
-                    _db.ChangePassword(_request.Content);
+                    _db.ChangePassword(_req.Content);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
                 }
 
-                 Response = "success";
+                Response = "success";
                 return;
             }
 
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+            if (_req.HttpX != null && _db.GetMaxTimestamp(_req.Collection) <= _req.HttpX.Value) {
                 Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
@@ -292,7 +280,7 @@ namespace Weave {
             var resultList = new WeaveResultList();
             var wboList = new Collection<WeaveBasicObject>();
 
-            object obj = _jss.DeserializeObject(_request.Content);
+            object obj = _jss.DeserializeObject(_req.Content);
             object[] objArray;
 
             if (obj != null) {
@@ -306,7 +294,6 @@ namespace Weave {
                 Response = ReportProblem(WeaveErrorCodes.JsonParse, 400);
                 return;
             }
-
 
             foreach (object objItem in objArray) {
                 wbo = new WeaveBasicObject();
@@ -328,8 +315,8 @@ namespace Weave {
                     continue;
                 }
 
-                wbo.Collection = _request.Collection;
-                wbo.Modified = ServerTime;
+                wbo.Collection = _req.Collection;
+                wbo.Modified = _req.RequestTime;
 
                 if (wbo.Validate()) {
                     wboList.Add(wbo);
@@ -348,44 +335,44 @@ namespace Weave {
                 }
             }
 
-             Response = resultList.ToJson();
+            Response = resultList.ToJson();
         }
 
         private void RequestDelete() {
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+            if (_req.HttpX != null && _db.GetMaxTimestamp(_req.Collection) <= _req.HttpX.Value) {
                 ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
-            if (_request.Id != null) {
+            if (_req.Id != null) {
                 try {
-                    _db.DeleteWbo(_request.Collection, _request.Id);
+                    _db.DeleteWbo(_req.Collection, _req.Id);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
                 }
 
-                 Response = _jss.Serialize(ServerTime);
+                Response = _jss.Serialize(_req.RequestTime);
             } else {
                 try {
-                    _db.DeleteWboList(_request.Collection, null,
-                                _request.QueryString["parentid"],
-                                _request.QueryString["predecessorid"],
-                                _request.QueryString["newer"],
-                                _request.QueryString["older"],
-                                _request.QueryString["sort"],
-                                _request.QueryString["limit"],
-                                _request.QueryString["offset"],
-                                _request.QueryString["ids"],
-                                _request.QueryString["index_above"],
-                                _request.QueryString["index_below"]
+                    _db.DeleteWboList(_req.Collection, null,
+                                _req.QueryString["parentid"],
+                                _req.QueryString["predecessorid"],
+                                _req.QueryString["newer"],
+                                _req.QueryString["older"],
+                                _req.QueryString["sort"],
+                                _req.QueryString["limit"],
+                                _req.QueryString["offset"],
+                                _req.QueryString["ids"],
+                                _req.QueryString["index_above"],
+                                _req.QueryString["index_below"]
                                 );
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
                 }
 
-                 Response = _jss.Serialize(ServerTime);
+                Response = _jss.Serialize(_req.RequestTime);
             }
         }
 
