@@ -66,7 +66,7 @@ namespace WeaveServer.Controllers {
             string result;
             try {
                 WeaveAdmin weaveAdmin = new WeaveAdmin();
-                result = weaveAdmin.GetCollectionListWithCounts(userId);
+                result = weaveAdmin.GetUserDetails(userId);
             } catch (WeaveException x) {
                 return "Error: " + x.Message;
             }

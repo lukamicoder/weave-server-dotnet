@@ -27,7 +27,7 @@ using Weave.Models;
 namespace Weave {
     class WeaveStorageAdmin : WeaveStorage {
         public List<object> GetUserList() {
-            List<object> result = new List<object>();
+            List<object> list = new List<object>();
 
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
@@ -37,7 +37,7 @@ namespace Weave {
                                     select new {
                                         u.UserId,
                                         u.UserName,
-                                        Total = (Double?)g.Sum(p => p.PayloadSize),
+                                        Payload = (Double?)g.Sum(p => p.PayloadSize),
                                         Date = (Double?)g.Max(p => p.Modified)
                                     }).ToList();
 
@@ -46,8 +46,8 @@ namespace Weave {
                         string userName = user.UserName;
                         double total;
                         string payload = "";
-                        if (user.Total != null) {
-                            total = (user.Total.Value * 1000) / 1024 / 1024;
+                        if (user.Payload != null) {
+                            total = (user.Payload.Value * 1000) / 1024 / 1024;
                             if (total >= 1024) {
                                 payload = Math.Round((total / 1024), 1) + "MB";
                             } else if (total > 0) {
@@ -61,7 +61,7 @@ namespace Weave {
                             date = 0;
                         }
 
-                        result.Add(new { UserId = userId, UserName = userName, Payload = payload, Date = date });
+                        list.Add(new { UserId = userId, UserName = userName, Payload = payload, Date = date });
                     }
                 } catch (EntityException x) {
                     WeaveLogger.WriteMessage(x.Message, LogType.Error);
@@ -69,35 +69,31 @@ namespace Weave {
                 }
             }
 
-            return result;
+            return list;
         }
 
-        public bool DeleteUser(Int64 userId) {
-            bool result = false;
-
+        public List<object> GetUserDetails(Int64 userId) {
+            List<object> list = new List<object>();
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
-                    var wboList = (from wbos in context.Wbos
-                                   join users in context.Users on wbos.UserId equals users.UserId
-                                   where users.UserId == userId
-                                   select wbos).ToList();
+                    var cts = from w in context.Wbos
+                              where w.UserId == userId
+                              group w by new { w.Collection } into g
+                              select new { g.Key.Collection, Count = (Int64)g.Count(), Payload = (double?)g.Sum(p => p.PayloadSize) };
 
-                    foreach (var del in wboList) {
-                        context.DeleteObject(del);
-                    }
+                    foreach (var p in cts) {
+                        double total;
+                        string payload = "";
+                        if (p.Payload != null) {
+                            total = (p.Payload.Value * 1000) / 1024 / 1024;
+                            if (total >= 1024) {
+                                payload = Math.Round((total / 1024), 1) + "MB";
+                            } else if (total > 0) {
+                                payload = Math.Round(total, 1) + "KB";
+                            }
+                        }
 
-                    var user = (from u in context.Users
-                                where u.UserId == userId
-                                select u).SingleOrDefault();
-
-                    if (user != null) {
-                        context.DeleteObject(user);
-                    }
-
-                    int x = context.SaveChanges();
-
-                    if (x != 0) {
-                        result = true;
+                        list.Add(new { Collection = WeaveCollectionDictionary.GetValue(p.Collection), p.Count, Payload = payload });
                     }
                 } catch (EntityException x) {
                     WeaveLogger.WriteMessage(x.Message, LogType.Error);
@@ -105,7 +101,7 @@ namespace Weave {
                 }
             }
 
-            return result;
+            return list;
         }
 
         public bool CreateUser(string userName, string password) {

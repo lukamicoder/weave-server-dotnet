@@ -19,8 +19,8 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.EntityClient;
 using System.Data.SQLite;
 using System.IO;
@@ -145,39 +145,6 @@ namespace Weave {
 			return result;
 		}
 
-		public double GetStorageTotal(Int64 userId) {
-			double result;
-
-			using (WeaveContext context = new WeaveContext(ConnectionString)) {
-				var total = (from u in context.Users
-							 where u.UserId == userId
-							 join w in context.Wbos on u.UserId equals w.UserId
-							 into g
-							 select new {
-								 Payload = (double?)g.Sum(p => p.PayloadSize)
-							 }).SingleOrDefault();
-
-				result = total.Payload.Value / 1024;
-			}
-			return result;
-		}
-
-		public Dictionary<string, long> GetCollectionListWithCounts(Int64 userId) {
-			var dic = new Dictionary<string, long>();
-			using (WeaveContext context = new WeaveContext(ConnectionString)) {
-				var cts = from w in context.Wbos
-						  where w.UserId == userId
-						  group w by new { w.Collection } into g
-						  select new { g.Key.Collection, ct = (Int64)g.Count() };
-
-				foreach (var p in cts) {
-					dic.Add(WeaveCollectionDictionary.GetValue(p.Collection), p.ct);
-				}
-			}
-
-			return dic;
-		}
-
 		public string HashString(string value) {
 			StringBuilder hashedString = new StringBuilder();
 			using (MD5CryptoServiceProvider serviceProvider = new MD5CryptoServiceProvider()) {
@@ -188,6 +155,42 @@ namespace Weave {
 			}
 
 			return hashedString.ToString();
+		}
+
+		public bool DeleteUser(Int64 userId) {
+			bool result = false;
+
+			using (WeaveContext context = new WeaveContext(ConnectionString)) {
+				try {
+					var wboList = (from wbos in context.Wbos
+								   join users in context.Users on wbos.UserId equals users.UserId
+								   where users.UserId == userId
+								   select wbos).ToList();
+
+					foreach (var del in wboList) {
+						context.DeleteObject(del);
+					}
+
+					var user = (from u in context.Users
+								where u.UserId == userId
+								select u).SingleOrDefault();
+
+					if (user != null) {
+						context.DeleteObject(user);
+					}
+
+					int x = context.SaveChanges();
+
+					if (x != 0) {
+						result = true;
+					}
+				} catch (EntityException x) {
+					WeaveLogger.WriteMessage(x.Message, LogType.Error);
+					throw new WeaveException("Database unavailable.", 503);
+				}
+			}
+
+			return result;
 		}
 	}
 }

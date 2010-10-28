@@ -39,6 +39,7 @@ $(document).ready(function () {
         var columns = [];
         columns[1] = ["Collection", "tdCell", "tdCell"];
         columns[2] = ["Count", "tdLoad", "tdLoad"];
+        columns[3] = ["Payload", "tdLoad", "tdLoad"];
         detailsTable = new JSONTable('dialogContent', 'detailsTable', columns);
     }
 
@@ -92,12 +93,12 @@ function showDetails(userid, username) {
         success: function (data) {
             var rows = new Array();
             if (data !== undefined) {
-                for (var d in data) {
+                for (var i = 0; i < data.length; i++) {
                     var row;
-                    if (d !== null) {
-                        row = [d, data[d]];
+                    if (data[i] !== null) {
+                        row = [data[i].Collection, data[i].Count, data[i].Payload];
                     } else {
-                        row = ["", ""];
+                        row = ["", "", ""];
                     }
 
                     rows.push(row);

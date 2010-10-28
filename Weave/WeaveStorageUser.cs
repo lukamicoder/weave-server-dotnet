@@ -107,7 +107,52 @@ namespace Weave {
         }
 
         public Dictionary<string, long> GetCollectionListWithCounts() {
-            return GetCollectionListWithCounts(UserId);
+            var dic = new Dictionary<string, long>();
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                var cts = from w in context.Wbos
+                          where w.UserId == UserId
+                          group w by new { w.Collection } into g
+                          select new { g.Key.Collection, ct = (Int64)g.Count() };
+
+                foreach (var p in cts) {
+                    dic.Add(WeaveCollectionDictionary.GetValue(p.Collection), p.ct);
+                }
+            }
+
+            return dic;
+        }
+
+        public double GetStorageTotal() {
+            double result;
+
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                var total = (from u in context.Users
+                             where u.UserId == UserId
+                             join w in context.Wbos on u.UserId equals w.UserId
+                             into g
+                             select new {
+                                 Payload = (double?)g.Sum(p => p.PayloadSize)
+                             }).SingleOrDefault();
+
+                result = total.Payload.Value / 1024;
+            }
+            return result;
+        }
+
+        public double[] GetCollectionStorageTotals() {
+            var totals = new double[11];
+            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                var cts = from w in context.Wbos
+                          where w.UserId == UserId
+                          group w by new { w.Collection } into g
+                          select new { g.Key.Collection, Payload = (double?)g.Sum(p => p.PayloadSize) };
+
+                foreach (var p in cts) {
+                    totals[p.Collection] = p.Payload.Value / 1024;
+                }
+            }
+
+            return totals;
         }
 
         public void StoreOrUpdateWbo(WeaveBasicObject wbo) {
@@ -479,10 +524,6 @@ namespace Weave {
             }
 
             return wboList;
-        }
-
-        public double GetStorageTotal() {
-            return GetStorageTotal(UserId);
         }
 
         public void ChangePassword(string password) {

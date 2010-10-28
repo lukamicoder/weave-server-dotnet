@@ -106,6 +106,9 @@ namespace Weave {
                 case "collection_counts":
                     Response = _jss.Serialize(_db.GetCollectionListWithCounts());
                     break;
+                case "collection_usage":
+                    Response = _jss.Serialize(_db.GetCollectionStorageTotals());
+                    break;
                 default:
                     Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
                     break;
@@ -277,7 +280,7 @@ namespace Weave {
             }
 
             WeaveBasicObject wbo;
-            var resultList = new WeaveResultList();
+            var resultList = new WeaveResultList(_req.RequestTime);
             var wboList = new Collection<WeaveBasicObject>();
 
             object obj = _jss.DeserializeObject(_req.Content);
@@ -340,7 +343,7 @@ namespace Weave {
 
         private void RequestDelete() {
             if (_req.HttpX != null && _db.GetMaxTimestamp(_req.Collection) <= _req.HttpX.Value) {
-                ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
+                Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
@@ -353,7 +356,7 @@ namespace Weave {
                 }
 
                 Response = _jss.Serialize(_req.RequestTime);
-            } else {
+            } else if (_req.Collection != null) {
                 try {
                     _db.DeleteWboList(_req.Collection, null,
                                 _req.QueryString["parentid"],
@@ -373,6 +376,13 @@ namespace Weave {
                 }
 
                 Response = _jss.Serialize(_req.RequestTime);
+            } else {
+                if (_req.ServerVariables["HTTP_X_CONFIRM_DELETE"] == null) {
+                    ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
+                    return;
+                }
+
+                _db.DeleteUser(_db.UserId);
             }
         }
 

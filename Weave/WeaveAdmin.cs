@@ -32,9 +32,13 @@ namespace Weave {
             _db = new WeaveStorageAdmin();
         }
 
-        public string GetCollectionListWithCounts(Int64 userId) {
-            var dic = _db.GetCollectionListWithCounts(userId);
-            return _jss.Serialize(dic);
+        public string GetUserDetails(Int64 userId) {
+            try {
+                var list = _db.GetUserDetails(userId);
+                return _jss.Serialize(list);
+            } catch (WeaveException ex) {
+                return ex.Message;
+            }
         }
 
         public string GetUserList() {
