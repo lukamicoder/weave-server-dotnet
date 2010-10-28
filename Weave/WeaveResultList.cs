@@ -28,6 +28,11 @@ namespace Weave {
         Dictionary<string, object> _result = new Dictionary<string, object>();
         Collection<string> _successIds;
         Dictionary<string, Collection<string>> _failedIds;
+        double _modified;
+
+        public WeaveResultList(double modified) {
+            _modified = modified;
+        }
 
         public Collection<string> SuccessIds {
             get {
@@ -50,6 +55,7 @@ namespace Weave {
         }
 
         public string ToJson() {
+            _result.Add("modified", _modified);
             _result.Add("success", _successIds);
             _result.Add("failed", _failedIds);
             return _jss.Serialize(_result);
