@@ -87,9 +87,9 @@ namespace Weave {
                         if (p.Payload != null) {
                             total = (p.Payload.Value * 1000) / 1024 / 1024;
                             if (total >= 1024) {
-                                payload = Math.Round((total / 1024), 1) + "MB";
+                                payload = Math.Round((total / 1024), 0) + "MB";
                             } else if (total > 0) {
-                                payload = Math.Round(total, 1) + "KB";
+                                payload = Math.Round(total, 0) + "KB";
                             }
                         }
 

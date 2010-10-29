@@ -23,7 +23,7 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 .JSONTable { float: left; border: solid 1px #888; border-collapse: collapse; width: 100%; }
 .JSONTable th { padding: 0.2em; background: #2A3940; padding-top: 2px; color: #fff; font-weight: bold; border: solid 1px #888; }
 .JSONTable a { color: #000; }
-.JSONTable td { padding: .2em; border: solid 1px #888; vertical-align: top; }
+.JSONTable td { padding: .3em; border: solid 1px #888; vertical-align: top; }
 .JSONTable .evenRow { background: #ddd; }
 .JSONTable .oddRow { background: #fff; }
 .JSONTable .tdCell { width: 160px; padding-left: 5px; text-align: left; }

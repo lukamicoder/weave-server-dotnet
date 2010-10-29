@@ -25,6 +25,8 @@ using System.Text;
 
 namespace Weave {
     class WeaveRequest {
+        public double RequestTime { get; private set; }
+
         private string _loginName;
         public string Password { get; private set; }
 
@@ -43,25 +45,17 @@ namespace Weave {
         public WeaveErrorCodes ErrorMessage { get; private set; }
         public int ErrorCode { get; private set; }
 
-        double? _requestTime;
-        public double RequestTime {
-            get {
-                if (_requestTime == null) {
-                    TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-                    _requestTime = Math.Round(ts.TotalSeconds, 2);
-                }
-
-                return _requestTime.Value;
-            }
+        public WeaveRequest() {
+            SetRequestTime();
         }
-
-        public WeaveRequest() {}
 
         public WeaveRequest(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {
             if (serverVariables == null || serverVariables.Count == 0 || String.IsNullOrEmpty(rawUrl)) {
                 IsValid = false;
                 return;
             }
+
+            SetRequestTime();
 
             ServerVariables = serverVariables;
             QueryString = queryString;
@@ -82,6 +76,11 @@ namespace Weave {
             if (IsValid) {
                 Validate();
             }
+        }
+
+        private void SetRequestTime() {
+            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+            RequestTime = Math.Round(ts.TotalSeconds, 2);           
         }
 
         private void ProcessUrl(string rawUrl) {
