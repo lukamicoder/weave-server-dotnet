@@ -49,45 +49,45 @@ namespace WeaveServer.Controllers {
             return View("Login");
         }
 
-        public string GetUserList() {
-            string result;
+        public ContentResult GetUserList() {
+            string output;
             try {
                 WeaveAdmin weaveAdmin = new WeaveAdmin();
-                result = weaveAdmin.GetUserList();
+                output = weaveAdmin.GetUserList();
             } catch (WeaveException x) {
-                return "Error: " + x.Message;
+                output =  "Error: " + x.Message;
             }
 
-            return result;
+            return Content(output);
         }
 
         [HttpPost]
-        public string GetUserDetails(int userId) {
-            string result;
+        public ContentResult GetUserDetails(int userId) {
+            string output;
             try {
                 WeaveAdmin weaveAdmin = new WeaveAdmin();
-                result = weaveAdmin.GetUserDetails(userId);
+                output = weaveAdmin.GetUserDetails(userId);
             } catch (WeaveException x) {
-                return "Error: " + x.Message;
+                output = "Error: " + x.Message;
             }
 
-            return result;
+            return Content(output);
         }
 
         [HttpPost]
-        public string AddUser(FormCollection form) {
+        public ContentResult AddUser(FormCollection form) {
             string user = form["login"];
             string pswd = form["password"];
             WeaveAdmin weaveAdmin = new WeaveAdmin();
 
-            return weaveAdmin.CreateUser(user, pswd);
+            return Content(weaveAdmin.CreateUser(user, pswd));
         }
 
         [HttpPost]
-        public string RemoveUser(int userId) {
+        public ContentResult RemoveUser(int userId) {
             WeaveAdmin weaveAdmin = new WeaveAdmin();
 
-            return weaveAdmin.DeleteUser(userId);
+            return Content(weaveAdmin.DeleteUser(userId));
         }
 
         public ActionResult DeleteUser() {
@@ -129,10 +129,8 @@ namespace WeaveServer.Controllers {
         public ActionResult Cleanup() {
             if (Request.IsLocal) {
                 WeaveAdmin weaveAdmin = new WeaveAdmin();
-
-                int no = weaveAdmin.Cleanup();
-
-                return Content(no + "");
+                
+                return Content(weaveAdmin.Cleanup() + "");
             }
 
             return View("PageNotFound");

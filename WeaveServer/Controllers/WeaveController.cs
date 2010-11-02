@@ -25,7 +25,7 @@ using Weave;
 
 namespace WeaveServer.Controllers {
     public class WeaveController : Controller {
-        public string Index() {
+        public ContentResult Index() {
             WeaveUser weave = new WeaveUser(Request.ServerVariables, Request.QueryString, Request.RawUrl, Request.InputStream);
 
             if (weave.Headers != null && weave.Headers.Count > 0) {
@@ -39,7 +39,7 @@ namespace WeaveServer.Controllers {
                 Response.StatusCode = weave.ErrorStatusCode;
             }
 
-            return weave.Response;
+            return Content(weave.Response);
         }
     }
 }
