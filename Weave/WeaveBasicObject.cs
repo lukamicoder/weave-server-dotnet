@@ -39,7 +39,7 @@ namespace Weave {
         public int? SortIndex { get; set; }
 
         public int PayloadSize() {
-            return Encoding.ASCII.GetByteCount(Payload);
+            return (String.IsNullOrEmpty(Payload)) ? 0 : Encoding.ASCII.GetByteCount(Payload);
         }
 
         public bool Populate(string json) {
