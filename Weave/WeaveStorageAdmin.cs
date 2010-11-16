@@ -82,18 +82,21 @@ namespace Weave {
                               select new { g.Key.Collection, Count = (Int64)g.Count(), Payload = (double?)g.Sum(p => p.PayloadSize) };
 
                     foreach (var p in cts) {
-                        double total;
-                        string payload = "";
-                        if (p.Payload != null) {
-                            total = (p.Payload.Value * 1000) / 1024 / 1024;
-                            if (total >= 1024) {
-                                payload = Math.Round((total / 1024), 0) + "MB";
-                            } else if (total > 0) {
-                                payload = Math.Round(total, 0) + "KB";
+                        //crypto, keys, meta
+                        if (p.Collection != 2 && p.Collection != 5 && p.Collection != 6) {
+                            double total;
+                            string payload = "";
+                            if (p.Payload != null) {
+                                total = (p.Payload.Value * 1000) / 1024 / 1024;
+                                if (total >= 1024) {
+                                    payload = Math.Round((total / 1024), 0) + "MB";
+                                } else if (total > 0) {
+                                    payload = Math.Round(total, 0) + "KB";
+                                }
                             }
-                        }
 
-                        list.Add(new { Collection = WeaveCollectionDictionary.GetValue(p.Collection), p.Count, Payload = payload });
+                            list.Add(new { Collection = WeaveCollectionDictionary.GetValue(p.Collection), p.Count, Payload = payload });
+                        }
                     }
                 } catch (EntityException x) {
                     WeaveLogger.WriteMessage(x.Message, LogType.Error);
