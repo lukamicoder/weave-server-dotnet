@@ -122,7 +122,7 @@ namespace Weave {
 
             if (_req.Id != null) {
                 try {
-                    wboList = _db.RetrieveWboList(_req.Collection, _req.Id, true, null, null, null, null, null, null, null, null, null, null);
+                    wboList = _db.RetrieveWboList(_req.Collection, _req.Id, true, null, null, null, null, null, null, null, null);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
@@ -151,8 +151,6 @@ namespace Weave {
 
                 try {
                     wboList = _db.RetrieveWboList(_req.Collection, null, full == "1" ? true : false,
-                                                    _req.QueryString["parentid"],
-                                                    _req.QueryString["predecessorid"],
                                                     _req.QueryString["newer"],
                                                     _req.QueryString["older"],
                                                     _req.QueryString["sort"],
@@ -359,8 +357,6 @@ namespace Weave {
             } else if (_req.Collection != null) {
                 try {
                     _db.DeleteWboList(_req.Collection, null,
-                                _req.QueryString["parentid"],
-                                _req.QueryString["predecessorid"],
                                 _req.QueryString["newer"],
                                 _req.QueryString["older"],
                                 _req.QueryString["sort"],

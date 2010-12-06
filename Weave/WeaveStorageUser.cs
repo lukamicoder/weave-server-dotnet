@@ -173,31 +173,13 @@ namespace Weave {
                             context.Wbos.AddObject(modelWbo);
                         } else {
                             wboToUpdate.Modified = modelWbo.Modified;
-                            wboToUpdate.ParentId = modelWbo.ParentId;
-                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
                             wboToUpdate.SortIndex = modelWbo.SortIndex;
                             wboToUpdate.Payload = modelWbo.Payload;
                             wboToUpdate.PayloadSize = modelWbo.PayloadSize;
                         }
                     } else {
-                        if (modelWbo.ParentId != null) {
-                            wboToUpdate.ParentId = modelWbo.ParentId;
-                        }
-
-                        if (modelWbo.PredecessorId != null) {
-                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
-                        }
-
                         if (modelWbo.SortIndex.HasValue) {
                             wboToUpdate.SortIndex = modelWbo.SortIndex;
-                        }
-
-                        if (modelWbo.ParentId != null) {
-                            if (wbo.Modified.HasValue) {
-                                wboToUpdate.Modified = modelWbo.Modified;
-                            } else {
-                                WeaveLogger.WriteMessage("Called UpdateWbo with no defined timestamp.", LogType.Error);
-                            }
                         }
                     }
 
@@ -235,32 +217,14 @@ namespace Weave {
                                             context.Wbos.AddObject(modelWbo);
                                         } else {
                                             wboToUpdate.Modified = modelWbo.Modified;
-                                            wboToUpdate.ParentId = modelWbo.ParentId;
-                                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
                                             wboToUpdate.SortIndex = modelWbo.SortIndex;
                                             wboToUpdate.Payload = modelWbo.Payload;
                                             wboToUpdate.PayloadSize = modelWbo.PayloadSize;
                                         }
                                         context.SaveChanges();
                                     } else {
-                                        if (modelWbo.ParentId != null) {
-                                            wboToUpdate.ParentId = modelWbo.ParentId;
-                                        }
-
-                                        if (modelWbo.PredecessorId != null) {
-                                            wboToUpdate.PredecessorId = modelWbo.PredecessorId;
-                                        }
-
                                         if (modelWbo.SortIndex.HasValue) {
                                             wboToUpdate.SortIndex = modelWbo.SortIndex;
-                                        }
-
-                                        if (modelWbo.ParentId != null) {
-                                            if (wbo.Modified.HasValue) {
-                                                wboToUpdate.Modified = modelWbo.Modified;
-                                            } else {
-                                                WeaveLogger.WriteMessage("Called UpdateWbo with no defined timestamp.", LogType.Error);
-                                            }
                                         }
 
                                         context.SaveChanges();
@@ -314,7 +278,7 @@ namespace Weave {
             }
         }
 
-        public void DeleteWboList(string collection, string id, string parentId, string predecessorId, string newer, string older, string sort,
+        public void DeleteWboList(string collection, string id, string newer, string older, string sort,
                                  string limit, string offset, string ids, string indexAbove, string indexBelow) {
 
             int coll = WeaveCollectionDictionary.GetKey(collection);
@@ -333,14 +297,6 @@ namespace Weave {
                         if (idArray.Length > 0) {
                             wbosToDelete = wbosToDelete.Where(p => idArray.Contains(p.Id));
                         }
-                    }
-
-                    if (parentId != null) {
-                        wbosToDelete = wbosToDelete.Where(p => p.ParentId == parentId);
-                    }
-
-                    if (predecessorId != null) {
-                        wbosToDelete = wbosToDelete.Where(p => p.PredecessorId == predecessorId);
                     }
 
                     if (indexAbove != null) {
@@ -410,8 +366,6 @@ namespace Weave {
                     wbo.Id = id;
                     wbo.Collection = collection;
                     wbo.Id = wboToGet.Id;
-                    wbo.ParentId = wboToGet.ParentId;
-                    wbo.PredecessorId = wboToGet.PredecessorId;
                     wbo.Modified = wboToGet.Modified;
                     wbo.SortIndex = wboToGet.SortIndex;
                     wbo.Payload = wboToGet.Payload;
@@ -427,8 +381,7 @@ namespace Weave {
             return wbo;
         }
 
-        public IList<WeaveBasicObject> RetrieveWboList(string collection, string id, bool full, string parentId,
-                                                      string predecessorId, string newer, string older, string sort, string limit, string offset,
+        public IList<WeaveBasicObject> RetrieveWboList(string collection, string id, bool full, string newer, string older, string sort, string limit, string offset,
                                                       string ids, string indexAbove, string indexBelow) {
             IList<WeaveBasicObject> wboList = new List<WeaveBasicObject>();
             int coll = WeaveCollectionDictionary.GetKey(collection);
@@ -448,14 +401,6 @@ namespace Weave {
                         if (idArray.Length > 0) {
                             wbosToGet = wbosToGet.Where(p => idArray.Contains(p.Id));
                         }
-                    }
-
-                    if (parentId != null) {
-                        wbosToGet = wbosToGet.Where(p => p.ParentId == parentId);
-                    }
-
-                    if (predecessorId != null) {
-                        wbosToGet = wbosToGet.Where(p => p.PredecessorId == predecessorId);
                     }
 
                     if (indexAbove != null) {
@@ -506,8 +451,6 @@ namespace Weave {
                             wbo.Id = id;
                             wbo.Collection = collection;
                             wbo.Id = wboToGet.Id;
-                            wbo.ParentId = wboToGet.ParentId;
-                            wbo.PredecessorId = wboToGet.PredecessorId;
                             wbo.Modified = wboToGet.Modified;
                             wbo.SortIndex = wboToGet.SortIndex;
                             wbo.Payload = wboToGet.Payload;

@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="WeaveModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
+    <Schema Namespace="WeaveModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/02/edm/ssdl">
         <EntityContainer Name="WeaveModelStoreContainer">
           <EntitySet Name="Users" EntityType="WeaveModel.Store.Users" store:Type="Tables" Schema="dbo" />
           <EntitySet Name="Wbos" EntityType="WeaveModel.Store.Wbos" store:Type="Tables" Schema="dbo" />
@@ -24,16 +24,14 @@
         <EntityType Name="Wbos">
           <Key>
             <PropertyRef Name="UserId" />
-            <PropertyRef Name="Collection" />
             <PropertyRef Name="Id" />
+            <PropertyRef Name="Collection" />
           </Key>
           <Property Name="UserId" Type="bigint" Nullable="false" />
-          <Property Name="Collection" Type="smallint" Nullable="false" />
           <Property Name="Id" Type="nvarchar" Nullable="false" MaxLength="64" />
-          <Property Name="ParentId" Type="nvarchar" MaxLength="64" />
-          <Property Name="PredecessorId" Type="nvarchar" MaxLength="64" />
-          <Property Name="SortIndex" Type="int" />
+          <Property Name="Collection" Type="smallint" Nullable="false" />
           <Property Name="Modified" Type="float" />
+          <Property Name="SortIndex" Type="int" />
           <Property Name="Payload" Type="text" />
           <Property Name="PayloadSize" Type="int" />
         </EntityType>
@@ -49,8 +47,7 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="WeaveModel" Alias="Self" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2008/09/edm">
@@ -80,8 +77,6 @@
           <Property Name="UserId" Type="Int64" Nullable="false" />
           <Property Name="Collection" Type="Int16" Nullable="false" />
           <Property Name="Id" Type="String" Nullable="false" MaxLength="64" Unicode="true" FixedLength="false" />
-          <Property Name="ParentId" Type="String" MaxLength="64" Unicode="true" FixedLength="false" />
-          <Property Name="PredecessorId" Type="String" MaxLength="64" Unicode="true" FixedLength="false" />
           <Property Name="SortIndex" Type="Int32" />
           <Property Name="Modified" Type="Double" />
           <Property Name="Payload" Type="String" MaxLength="Max" Unicode="false" FixedLength="false" />
@@ -115,8 +110,6 @@
             <ScalarProperty Name="UserId" ColumnName="UserId" />
             <ScalarProperty Name="Collection" ColumnName="Collection" />
             <ScalarProperty Name="Id" ColumnName="Id" />
-            <ScalarProperty Name="ParentId" ColumnName="ParentId" />
-            <ScalarProperty Name="PredecessorId" ColumnName="PredecessorId" />
             <ScalarProperty Name="SortIndex" ColumnName="SortIndex" />
             <ScalarProperty Name="Modified" ColumnName="Modified" />
             <ScalarProperty Name="Payload" ColumnName="Payload" />
@@ -144,7 +137,7 @@
     <Diagrams>
       <Diagram Name="SQLServerModel">
         <EntityTypeShape EntityType="WeaveModel.User" Width="1.5" PointX="0.75" PointY="1.5" Height="1.7879850260416672" IsExpanded="true" />
-        <EntityTypeShape EntityType="WeaveModel.Wbo" Width="1.5" PointX="3" PointY="1" Height="2.9417936197916656" IsExpanded="true" />
+        <EntityTypeShape EntityType="WeaveModel.Wbo" Width="1.5" PointX="3" PointY="1" Height="2.7494921874999996" IsExpanded="true" />
         <AssociationConnector Association="WeaveModel.FK_Wbos_Users" ManuallyRouted="false">
           <ConnectorPoint PointX="2.25" PointY="2.3939925130208337" />
           <ConnectorPoint PointX="3" PointY="2.3939925130208337" />

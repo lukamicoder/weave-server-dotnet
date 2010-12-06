@@ -22,8 +22,6 @@ CREATE TABLE [dbo].[Wbos](
 	[UserId] [bigint] NOT NULL,
 	[Id] [nvarchar](64) NOT NULL,
 	[Collection] [smallint] NOT NULL,
-	[ParentId] [nvarchar](64) NULL,
-	[PredecessorId] [nvarchar](64) NULL,
 	[Modified] [float] NULL,
 	[SortIndex] [int] NULL,
 	[Payload] [text] NULL,

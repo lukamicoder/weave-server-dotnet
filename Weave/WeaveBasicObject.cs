@@ -32,8 +32,6 @@ namespace Weave {
 
         public string Id { get; set; }
         public string Collection { get; set; }
-        public string ParentId { get; set; }
-        public string PredecessorId { get; set; }
         public double? Modified { get; set; }
         public string Payload { get; set; }
         public int? SortIndex { get; set; }
@@ -71,14 +69,6 @@ namespace Weave {
                 Collection = dic["collection"] as string;
             }
 
-            if (dic.ContainsKey("parentid") && dic["parentid"] != DBNull.Value) {
-                ParentId = dic["parentid"] as string;
-            }
-
-            if (dic.ContainsKey("predecessorid") && dic["predecessorid"] != DBNull.Value) {
-                PredecessorId = dic["predecessorid"] as string;
-            }
-
             if (dic.ContainsKey("modified") && dic["modified"] != DBNull.Value) {
                 try {
                     Modified = Convert.ToDouble(dic["modified"]);
@@ -107,14 +97,6 @@ namespace Weave {
                 _error.Add("Invalid id");
             }
 
-            if (ParentId != null && ParentId.Length > 64) {
-                _error.Add("Invalid parentid");
-            }
-
-            if (PredecessorId != null && PredecessorId.Length > 64) {
-                _error.Add("Invalid predecessorid");
-            }
-
             if (!Modified.HasValue) {
                 _error.Add("No modification date");
             }
@@ -141,14 +123,6 @@ namespace Weave {
                 dic.Add("id", Id);
             }
 
-            if (ParentId != null) {
-                dic.Add("parentid", ParentId);
-            }
-
-            if (PredecessorId != null) {
-                dic.Add("predecessorid", PredecessorId);
-            }
-
             if (Modified.HasValue) {
                 dic.Add("modified", Modified.Value);
             }
@@ -173,11 +147,9 @@ namespace Weave {
 
             wbo.Collection = WeaveCollectionDictionary.GetKey(Collection);
             wbo.Id = Id;
-            wbo.Modified = Modified;          
-            wbo.ParentId = ParentId;
+            wbo.Modified = Modified;
             wbo.Payload = Payload;
             wbo.PayloadSize = PayloadSize();
-            wbo.PredecessorId = PredecessorId;
             wbo.SortIndex = SortIndex;
 
             return wbo;
