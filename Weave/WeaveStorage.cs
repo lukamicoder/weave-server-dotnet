@@ -109,8 +109,6 @@ namespace Weave {
 						UserId integer NOT NULL,
 						Id varchar(64) NOT NULL,
 						Collection smallint NOT NULL,
-						ParentId varchar(64) NULL,
-						PredecessorId varchar(64) NULL,
 						Modified double NULL,
 						SortIndex int NULL,
 						Payload text NULL,
