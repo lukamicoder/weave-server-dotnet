@@ -109,7 +109,7 @@ namespace Weave {
                 _error.Add("Invalid sortindex");
             }
 
-            if (PayloadSize > 262144) {
+            if (PayloadSize() > 262144) {
                 //Larger than 256KByte
                 _error.Add("Payload too large");
             }
