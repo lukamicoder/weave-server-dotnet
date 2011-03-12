@@ -81,7 +81,7 @@ namespace Weave {
         }
 
         public Dictionary<string, double> GetCollectionListWithTimestamps() {
-            Dictionary<string, double> dic = new Dictionary<string, double>();
+            var dic = new Dictionary<string, double>();
 
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
@@ -139,20 +139,20 @@ namespace Weave {
             return result;
         }
 
-        public double[] GetCollectionStorageTotals() {
-            var totals = new double[11];
+        public Dictionary<string, int> GetCollectionStorageTotals() {
+            var dic = new Dictionary<string, int>();
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 var cts = from w in context.Wbos
                           where w.UserId == UserId
                           group w by new { w.Collection } into g
-                          select new { g.Key.Collection, Payload = (double?)g.Sum(p => p.PayloadSize) };
+                          select new { g.Key.Collection, Payload = (int?)g.Sum(p => p.PayloadSize) };
 
                 foreach (var p in cts) {
-                    totals[p.Collection] = p.Payload.Value / 1024;
+                    dic.Add(WeaveCollectionDictionary.GetValue(p.Collection), p.Payload.Value / 1024);
                 }
             }
 
-            return totals;
+            return dic;
         }
 
         public void StoreOrUpdateWbo(WeaveBasicObject wbo) {
