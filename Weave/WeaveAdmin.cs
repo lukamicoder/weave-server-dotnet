@@ -63,7 +63,7 @@ namespace Weave {
             string msg = "";
             if (String.IsNullOrEmpty(userName) && String.IsNullOrEmpty(password)) {
                 msg = "Username and password cannot be blank.";
-            } else if (!WeaveValidation.IsValid(userName)) {
+            } else if (!WeaveValidation.IsUserNameValid(userName)) {
                 msg = "Username can only consist of characters (A-Z or a-z), numbers (0-9), and these special characters: _ -.";
             } else if (!_db.IsUniqueUserName(userName)) {
                 msg = "Username already exists.";
