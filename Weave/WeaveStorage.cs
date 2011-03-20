@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2010 Karoly Lukacs <lukamicoder@gmail.com>
+﻿/* Copyright (C) 2011 Karoly Lukacs <lukamicoder@gmail.com>
  *
  * Based on code created by Mozilla Labs.
  * 

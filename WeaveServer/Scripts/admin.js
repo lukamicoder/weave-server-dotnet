@@ -1,4 +1,4 @@
-﻿/* Copyright (C) 2010 Karoly Lukacs <lukamicoder@gmail.com>
+﻿/* Copyright (C) 2011 Karoly Lukacs <lukamicoder@gmail.com>
 *
 * This is free software; you can redistribute it and/or
 * modify it under the terms of the GNU Library General Public
