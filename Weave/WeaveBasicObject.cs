@@ -93,7 +93,7 @@ namespace Weave {
         }
 
         public bool Validate() {
-            if (Id == null || Id.Length > 64 || Id.Contains("/")) {
+            if (Id == null || Id.Length > 64) {
                 _error.Add("Invalid id");
             }
 
