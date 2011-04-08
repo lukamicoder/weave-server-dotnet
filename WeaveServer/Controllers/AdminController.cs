@@ -36,15 +36,14 @@ namespace WeaveServer.Controllers {
             if (FormsAuthentication.Authenticate(user, pswd)) {
                 FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, "User");
                 string cookieStr = FormsAuthentication.Encrypt(ticket);
-                HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr);
-                cookie.Path = FormsAuthentication.FormsCookiePath;
+                HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr) {Path = FormsAuthentication.FormsCookiePath};
                 Response.Cookies.Add(cookie);
 
                 return RedirectToAction("Index", "Admin");
             }
 
-            ViewData["errorMessage"] = "Incorrect username and/or password.";
-            ViewData["errorDisplay"] = "block";
+            ViewBag.ErrorMessage = "Incorrect username and/or password.";
+            ViewBag.ErrorDisplay = "block";
 
             return View("Login");
         }
@@ -109,7 +108,7 @@ namespace WeaveServer.Controllers {
                         result = weaveAdmin.DeleteUser(id);
                         if (result == "") {
                             result = String.Format("{0} has been deleted from the database.", user);
-                            ViewData["resultStyle"] = "color: Black;";
+                            ViewBag.ResultStyle = "color: Black;";
                         }
                     } else {
                         result = "Incorrect username and/or password";
@@ -121,7 +120,7 @@ namespace WeaveServer.Controllers {
                 result = "Incorrect username and/or password";
             }
 
-            ViewData["resultMessage"] = result;
+            ViewBag.ResultMessage = result;
 
             return View("DeleteUser");
         }
