@@ -139,5 +139,9 @@ namespace WeaveServer.Controllers {
             FormsAuthentication.SignOut();
             return RedirectToAction("Index", "Admin");
         }
+
+        public ActionResult PageNotFound() {
+            return View("PageNotFound");
+        }
     }
 }

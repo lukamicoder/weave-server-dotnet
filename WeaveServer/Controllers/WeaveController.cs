@@ -28,7 +28,7 @@ namespace WeaveServer.Controllers {
         public ContentResult Index() {
             WeaveUser weave = new WeaveUser(Request.ServerVariables, Request.QueryString, Request.RawUrl, Request.InputStream);
 
-            if (weave.Headers != null && weave.Headers.Count > 0) {
+            if (weave.Response != null && weave.Headers != null && weave.Headers.Count > 0) {
                 foreach (KeyValuePair<string, string> pair in weave.Headers) {
                     Response.AppendHeader(pair.Key, pair.Value);
                 }

@@ -48,7 +48,7 @@ namespace WeaveServer {
             routes.MapRoute(
                 "Default",
                 "{*url}",
-                new { controller = "Shared", action = "PageNotFound" }
+                new { controller = "Admin", action = "PageNotFound" }
             );
         }
 
