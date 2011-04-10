@@ -164,38 +164,43 @@ function loadUserTable() {
         success: function (users) {
             var rows = new Array();
             if (users !== undefined) {
-                for (var i = 0; i < users.length; i++) {
-                    if (users[i] !== null) {
-                        var username = users[i].UserName;
-                        var id = users[i].UserId;
-                        var size = users[i].Payload;
-
-                        var date = "";
-                        if (users[i].Date > 0) {
-                            var date = new Date(users[i].Date);
-                            date = date.format();
-                        }
-
-                        if (date !== "") {
-                            var del = document.createElement("a");
-                            $(del).attr('href', "javascript:showDetails('" + id + "', '" + username + "');");
-                            $(del).append(document.createTextNode('details'));
-                        } else {
-                            var del = "";
-                        }
-
-                        var edit = document.createElement("a");
-                        $(edit).attr('href', "javascript:openDialog('del', '" + id + "', '" + username + "');");
-                        $(edit).append(document.createTextNode('delete'));
-
-                        var row = [username, size, date, del, edit];
-                    } else {
-                        var row = ["", "", "", "", ""];
-                    }
-
+                if (users.length == 0) {
+                    var row = ["&nbsp;", "", "", "", ""];
                     rows.push(row);
+                } else {
+                    for (var i = 0; i < users.length; i++) {
+                        if (users[i] !== null) {
+                            var username = users[i].UserName;
+                            var id = users[i].UserId;
+                            var size = users[i].Payload;
+
+                            var date = "";
+                            if (users[i].Date > 0) {
+                                var date = new Date(users[i].Date);
+                                date = date.format();
+                            }
+
+                            if (date !== "") {
+                                var del = document.createElement("a");
+                                $(del).attr('href', "javascript:showDetails('" + id + "', '" + username + "');");
+                                $(del).append(document.createTextNode('details'));
+                            } else {
+                                var del = "";
+                            }
+
+                            var edit = document.createElement("a");
+                            $(edit).attr('href', "javascript:openDialog('del', '" + id + "', '" + username + "');");
+                            $(edit).append(document.createTextNode('delete'));
+
+                            var row = [username, size, date, del, edit];
+                        } else {
+                            var row = ["&nbsp;", "", "", "", ""];
+                        }
+
+                        rows.push(row);
+                    }
                 }
-            }
+            } 
 
             userTable.loadData(rows);
         },
