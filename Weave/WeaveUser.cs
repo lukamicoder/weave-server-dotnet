@@ -244,7 +244,7 @@ namespace Weave {
 
             if (wbo.Validate()) {
                 try {
-                    _db.StoreOrUpdateWbo(wbo);
+                    _db.SaveWbo(wbo);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;

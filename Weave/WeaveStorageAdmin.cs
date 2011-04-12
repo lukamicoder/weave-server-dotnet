@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Objects;
 using System.Linq;
 using Weave.Models;
 
@@ -76,6 +77,8 @@ namespace Weave {
             List<object> list = new List<object>();
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
+                    context.Wbos.MergeOption = MergeOption.NoTracking;
+
                     var cts = from w in context.Wbos
                               where w.UserId == userId
                               group w by new { w.Collection } into g
@@ -137,6 +140,8 @@ namespace Weave {
 
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
+                    context.Users.MergeOption = MergeOption.NoTracking;
+
                     var id = (from u in context.Users
                               where u.UserName == userName
                               select u.UserId).SingleOrDefault();
@@ -156,8 +161,8 @@ namespace Weave {
         public int Cleanup(int days) {
             if (days > 0) {
                 TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-                int dayinsecond = 60 * 60 * 24;
-                double deleteTime = ts.TotalSeconds - (dayinsecond * days);
+                const int dayInSecond = 60 * 60 * 24;
+                double deleteTime = ts.TotalSeconds - (dayInSecond * days);
 
                 using (WeaveContext context = new WeaveContext(ConnectionString)) {
                     try {
@@ -184,9 +189,9 @@ namespace Weave {
                         return -1;
                     }
                 }
-            } else {
-                return -1;
             }
+
+            return -1;
         }
     }
 }

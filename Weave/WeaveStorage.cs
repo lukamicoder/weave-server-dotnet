@@ -22,6 +22,7 @@ using System;
 using System.Configuration;
 using System.Data;
 using System.Data.EntityClient;
+using System.Data.Objects;
 using System.Data.SQLite;
 using System.IO;
 using System.Security.Cryptography;
@@ -130,6 +131,9 @@ namespace Weave {
 
 			using (WeaveContext context = new WeaveContext(ConnectionString)) {
 				string hash = HashString(password);
+
+                context.Users.MergeOption = MergeOption.NoTracking;
+
 				var id = (from u in context.Users
 						  where u.UserName == userName && u.Md5 == hash
 						  select u.UserId).SingleOrDefault();

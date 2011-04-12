@@ -155,7 +155,7 @@ namespace Weave {
             return dic;
         }
 
-        public void StoreOrUpdateWbo(WeaveBasicObject wbo) {
+        public void SaveWbo(WeaveBasicObject wbo) {
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
                     Wbo modelWbo = wbo.GetModelWbo();
@@ -191,7 +191,7 @@ namespace Weave {
             }
         }
 
-        static readonly Func<WeaveContext, Int64, Int16, String, Wbo> StoreOrUpdateWboListQuery = CompiledQuery.Compile<WeaveContext, Int64, Int16, String, Wbo>(
+        static readonly Func<WeaveContext, Int64, Int16, String, Wbo> SaveWboListQuery = CompiledQuery.Compile<WeaveContext, Int64, Int16, String, Wbo>(
             (context, userId, collection, id) => (from wbos in context.Wbos
                                                   where wbos.UserId == userId &&
                                                         wbos.Collection == collection &&
@@ -210,7 +210,7 @@ namespace Weave {
                                     Wbo modelWbo = wbo.GetModelWbo();
                                     modelWbo.UserId = UserId;
 
-                                    var wboToUpdate = StoreOrUpdateWboListQuery.Invoke(context, UserId, modelWbo.Collection, modelWbo.Id);
+                                    var wboToUpdate = SaveWboListQuery.Invoke(context, UserId, modelWbo.Collection, modelWbo.Id);
 
                                     if (wbo.Payload != null) {
                                         if (wboToUpdate == null) {
@@ -359,19 +359,17 @@ namespace Weave {
             int coll = WeaveCollectionDictionary.GetKey(collection);
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
+                    context.Wbos.MergeOption = MergeOption.NoTracking;
+
                     var wboToGet = (from w in context.Wbos
                                     where w.UserId == UserId && w.Collection == coll && w.Id == id
                                     select w).SingleOrDefault();
 
                     wbo.Id = id;
                     wbo.Collection = collection;
-                    wbo.Id = wboToGet.Id;
                     wbo.Modified = wboToGet.Modified;
                     wbo.SortIndex = wboToGet.SortIndex;
                     wbo.Payload = wboToGet.Payload;
-                    wbo.Id = wboToGet.Id;
-                    wbo.Id = wboToGet.Id;
-                    wbo.Id = wboToGet.Id;
                 } catch (EntityException x) {
                     WeaveLogger.WriteMessage(x.Message, LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
@@ -388,6 +386,8 @@ namespace Weave {
 
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
+                    context.Wbos.MergeOption = MergeOption.NoTracking;
+
                     var wbosToGet = from w in context.Wbos
                                     where w.UserId == UserId && w.Collection == coll
                                     select w;

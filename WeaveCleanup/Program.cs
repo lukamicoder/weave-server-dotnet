@@ -27,7 +27,7 @@ using System.Text;
 namespace WeaveCleanup {
     class Program {
         static void Main(string[] args) {
-            string appName = "Weave Cleanup";
+            const string appName = "Weave Cleanup";
             string host = ConfigurationManager.AppSettings["WeaveServer.URL"];
 
             if (!EventLog.SourceExists(appName)) {
