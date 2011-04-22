@@ -329,7 +329,7 @@ namespace Weave {
 
             if (wboList.Count > 0) {
                 try {
-                    _db.StoreOrUpdateWboList(wboList, resultList);
+                    _db.SaveWboList(wboList, resultList);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;

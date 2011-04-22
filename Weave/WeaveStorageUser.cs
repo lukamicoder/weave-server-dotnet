@@ -198,7 +198,7 @@ namespace Weave {
                                                         wbos.Id == id
                                                   select wbos).SingleOrDefault());
 
-        public void StoreOrUpdateWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList) {
+        public void SaveWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList) {
             if (wboList != null && wboList.Count > 0) {
                 using (WeaveContext context = new WeaveContext(ConnectionString)) {
                     try {
