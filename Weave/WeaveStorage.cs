@@ -116,8 +116,6 @@ namespace Weave {
 						PayloadSize int NULL,
 						PRIMARY KEY (UserId, Collection, Id),
 						FOREIGN KEY (UserId) REFERENCES Users(UserId));
-				  CREATE INDEX parentindex ON Wbos (UserId, ParentId);
-				  CREATE INDEX predecessorindex ON Wbos (UserId, PredecessorId);
 				  CREATE INDEX modifiedindex ON Wbos (UserId, Collection, Modified);
 				  END TRANSACTION;";
 
