@@ -69,7 +69,7 @@ function openDialog(type, value, value2) {
         $('#dialogContent').append("<p><span>Password:</span><input name='password' id='password' type='password' /></p>");
     } else if (type == "error") {
         $('#dialog').dialog("option", "title", "Error");
-        $('#dialog').dialog("option", "width", 300);
+        $('#dialog').dialog("option", "width", 'auto');
         $('#dialog').dialog("option", "buttons", { "OK": function () { $(this).dialog("close"); } });
 
         $('#dialogContent')[0].style.color = 'Red';
