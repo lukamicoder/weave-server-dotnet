@@ -96,22 +96,27 @@ namespace Weave {
         }
 
         private void RequestGetInfo() {
-            switch (_req.Collection) {
-                case "quota":
-                    Response = _jss.Serialize(new[] { _db.GetStorageTotal() });
-                    break;
-                case "collections":
-                    Response = _jss.Serialize(_db.GetCollectionListWithTimestamps());
-                    break;
-                case "collection_counts":
-                    Response = _jss.Serialize(_db.GetCollectionListWithCounts());
-                    break;
-                case "collection_usage":
-                    Response = _jss.Serialize(_db.GetCollectionStorageTotals());
-                    break;
-                default:
-                    Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
-                    break;
+            try {
+                switch (_req.Collection) {
+                    case "quota":
+                        Response = _jss.Serialize(new[] { _db.GetStorageTotal() });
+                        break;
+                    case "collections":
+                        Response = _jss.Serialize(_db.GetCollectionListWithTimestamps());
+                        break;
+                    case "collection_counts":
+                        Response = _jss.Serialize(_db.GetCollectionListWithCounts());
+                        break;
+                    case "collection_usage":
+                        Response = _jss.Serialize(_db.GetCollectionStorageTotals());
+                        break;
+                    default:
+                        Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
+                        break;
+                }
+            } catch (WeaveException e) {
+                Response = ReportProblem(e.Message, e.Code);
+                return;
             }
         }
 

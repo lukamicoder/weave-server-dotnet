@@ -37,7 +37,7 @@ namespace Weave {
                 var list = _db.GetUserDetails(userId);
                 return _jss.Serialize(list);
             } catch (WeaveException ex) {
-                return ex.Message;
+                return String.Format("Error: {0}", ex.Message);
             }
         }
 
@@ -46,7 +46,7 @@ namespace Weave {
                 var list = _db.GetUserList();
                 return _jss.Serialize(list);
             } catch (WeaveException ex) {
-                return ex.Message;
+                return String.Format("Error: {0}", ex.Message);
             }
         }
 

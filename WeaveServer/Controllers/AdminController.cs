@@ -26,6 +26,8 @@ using Weave;
 
 namespace WeaveServer.Controllers {
     public class AdminController : Controller {
+        WeaveAdmin _weaveAdmin = new WeaveAdmin();
+
         public ActionResult Index(FormCollection form) {
             if (form.Count == 0) {
                 return Request.IsAuthenticated ? View() : View("Login");
@@ -49,44 +51,25 @@ namespace WeaveServer.Controllers {
         }
 
         public ContentResult GetUserList() {
-            string output;
-            try {
-                WeaveAdmin weaveAdmin = new WeaveAdmin();
-                output = weaveAdmin.GetUserList();
-            } catch (WeaveException x) {
-                output =  "Error: " + x.Message;
-            }
-
-            return Content(output);
+            return Content(_weaveAdmin.GetUserList());
         }
 
         [HttpPost]
         public ContentResult GetUserDetails(int userId) {
-            string output;
-            try {
-                WeaveAdmin weaveAdmin = new WeaveAdmin();
-                output = weaveAdmin.GetUserDetails(userId);
-            } catch (WeaveException x) {
-                output = "Error: " + x.Message;
-            }
-
-            return Content(output);
+            return Content(_weaveAdmin.GetUserDetails(userId));
         }
 
         [HttpPost]
         public ContentResult AddUser(FormCollection form) {
             string user = form["login"];
             string pswd = form["password"];
-            WeaveAdmin weaveAdmin = new WeaveAdmin();
 
-            return Content(weaveAdmin.CreateUser(user, pswd));
+            return Content(_weaveAdmin.CreateUser(user, pswd));
         }
 
         [HttpPost]
         public ContentResult RemoveUser(int userId) {
-            WeaveAdmin weaveAdmin = new WeaveAdmin();
-
-            return Content(weaveAdmin.DeleteUser(userId));
+            return Content(_weaveAdmin.DeleteUser(userId));
         }
 
         public ActionResult DeleteUser() {
@@ -100,21 +83,15 @@ namespace WeaveServer.Controllers {
             string result;
 
             if (!String.IsNullOrEmpty(user) && !String.IsNullOrEmpty(pswd)) {
-                try {
-                    WeaveAdmin weaveAdmin = new WeaveAdmin();
-
-                    Int64 id = weaveAdmin.AuthenticateUser(user, pswd);
-                    if (id != 0) {
-                        result = weaveAdmin.DeleteUser(id);
-                        if (result == "") {
-                            result = String.Format("{0} has been deleted from the database.", user);
-                            ViewBag.ResultStyle = "color: Black;";
-                        }
-                    } else {
-                        result = "Incorrect username and/or password";
+                Int64 id = _weaveAdmin.AuthenticateUser(user, pswd);
+                if (id != 0) {
+                    result = _weaveAdmin.DeleteUser(id);
+                    if (result == "") {
+                        result = String.Format("{0} has been deleted from the database.", user);
+                        ViewBag.ResultStyle = "color: Black;";
                     }
-                } catch (WeaveException x) {
-                    result = x.Message;
+                } else {
+                    result = "Incorrect username and/or password";
                 }
             } else {
                 result = "Incorrect username and/or password";
@@ -127,9 +104,7 @@ namespace WeaveServer.Controllers {
 
         public ActionResult Cleanup() {
             if (Request.IsLocal) {
-                WeaveAdmin weaveAdmin = new WeaveAdmin();
-                
-                return Content(weaveAdmin.Cleanup() + "");
+                return Content(_weaveAdmin.Cleanup() + "");
             }
 
             return View("PageNotFound");

@@ -109,13 +109,18 @@ namespace Weave {
         public Dictionary<string, long> GetCollectionListWithCounts() {
             var dic = new Dictionary<string, long>();
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
-                var cts = from w in context.Wbos
-                          where w.UserId == UserId
-                          group w by new { w.Collection } into g
-                          select new { g.Key.Collection, ct = (Int64)g.Count() };
+                try {
+                    var cts = from w in context.Wbos
+                              where w.UserId == UserId
+                              group w by new { w.Collection } into g
+                              select new { g.Key.Collection, ct = (Int64)g.Count() };
 
-                foreach (var p in cts) {
-                    dic.Add(WeaveCollectionDictionary.GetValue(p.Collection), p.ct);
+                    foreach (var p in cts) {
+                        dic.Add(WeaveCollectionDictionary.GetValue(p.Collection), p.ct);
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
                 }
             }
 
@@ -126,15 +131,20 @@ namespace Weave {
             double result;
 
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
-                var total = (from u in context.Users
-                             where u.UserId == UserId
-                             join w in context.Wbos on u.UserId equals w.UserId
-                             into g
-                             select new {
-                                 Payload = (double?)g.Sum(p => p.PayloadSize)
-                             }).SingleOrDefault();
+                try {
+                    var total = (from u in context.Users
+                                 where u.UserId == UserId
+                                 join w in context.Wbos on u.UserId equals w.UserId
+                                 into g
+                                 select new {
+                                     Payload = (double?)g.Sum(p => p.PayloadSize)
+                                 }).SingleOrDefault();
 
-                result = total.Payload.Value / 1024;
+                    result = total.Payload.Value / 1024;
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
             }
             return result;
         }
@@ -142,13 +152,18 @@ namespace Weave {
         public Dictionary<string, int> GetCollectionStorageTotals() {
             var dic = new Dictionary<string, int>();
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
-                var cts = from w in context.Wbos
-                          where w.UserId == UserId
-                          group w by new { w.Collection } into g
-                          select new { g.Key.Collection, Payload = (int?)g.Sum(p => p.PayloadSize) };
+                try {
+                    var cts = from w in context.Wbos
+                              where w.UserId == UserId
+                              group w by new { w.Collection } into g
+                              select new { g.Key.Collection, Payload = (int?)g.Sum(p => p.PayloadSize) };
 
-                foreach (var p in cts) {
-                    dic.Add(WeaveCollectionDictionary.GetValue(p.Collection), p.Payload.Value / 1024);
+                    foreach (var p in cts) {
+                        dic.Add(WeaveCollectionDictionary.GetValue(p.Collection), p.Payload.Value / 1024);
+                    }
+                } catch (EntityException x) {
+                    WeaveLogger.WriteMessage(x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
                 }
             }
 
