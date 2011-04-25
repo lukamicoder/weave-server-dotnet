@@ -23,7 +23,7 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Text;
 
-namespace Weave {
+namespace WeaveCore {
     class WeaveRequest {
         public double RequestTime { get; private set; }
 

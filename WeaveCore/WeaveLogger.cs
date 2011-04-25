@@ -25,7 +25,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
-namespace Weave {
+namespace WeaveCore {
     enum LogType {
         Error = 0,
         Information = 1,

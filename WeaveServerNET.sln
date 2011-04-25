@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeaveServer", "WeaveServer\WeaveServer.csproj", "{B9652398-C3B5-4C4B-A6BE-120713147A67}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave", "Weave\Weave.csproj", "{0826D506-3A67-4A33-8BEA-0A211AA9A153}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeaveCore", "WeaveCore\WeaveCore.csproj", "{0826D506-3A67-4A33-8BEA-0A211AA9A153}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WeaveCleanup", "WeaveCleanup\WeaveCleanup.csproj", "{5E84A278-7455-4CAB-8F7E-7DD39AFFB3CD}"
 EndProject

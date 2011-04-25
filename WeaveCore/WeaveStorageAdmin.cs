@@ -23,9 +23,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Objects;
 using System.Linq;
-using Weave.Models;
+using WeaveCore.Models;
 
-namespace Weave {
+namespace WeaveCore {
     class WeaveStorageAdmin : WeaveStorageBase {
         public List<object> GetUserList() {
             List<object> list = new List<object>();

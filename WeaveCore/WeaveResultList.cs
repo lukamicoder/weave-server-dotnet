@@ -22,7 +22,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Web.Script.Serialization;
 
-namespace Weave {
+namespace WeaveCore {
     class WeaveResultList {
         JavaScriptSerializer _jss = new JavaScriptSerializer();
         Dictionary<string, object> _result = new Dictionary<string, object>();

@@ -18,19 +18,18 @@
  * Boston, MA 02111-1307, USA.
  */
 
-using System.Data.Objects;
+using System.Text.RegularExpressions;
 
-namespace Weave.Models {
-    class WeaveContext : ObjectContext {
-        public ObjectSet<User> Users { get; private set; }
-        public ObjectSet<Wbo> Wbos { get; private set; }
+namespace WeaveCore {
+    static class WeaveValidation {
+        static Regex _regex = new Regex(@"[^a-zA-Z0-9._-]");
 
-        public WeaveContext(string connectionString)
-            : base(connectionString, "WeaveEntities") {
-            Users = CreateObjectSet<User>();
-            Wbos = CreateObjectSet<Wbo>(); 
-            
-            this.Connection.ConnectionString = connectionString;     
+        public static bool IsUserNameValid(string text) {
+            if (string.IsNullOrEmpty(text) || text.Length > 32) {
+                return false;
+            }
+
+            return !_regex.IsMatch(text);
         }
     }
 }

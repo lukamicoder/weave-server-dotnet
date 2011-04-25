@@ -22,7 +22,7 @@ using System;
 using System.Configuration;
 using System.Web.Script.Serialization;
 
-namespace Weave {
+namespace WeaveCore {
     public class WeaveAdmin {
         JavaScriptSerializer _jss;
         WeaveStorageAdmin _db;

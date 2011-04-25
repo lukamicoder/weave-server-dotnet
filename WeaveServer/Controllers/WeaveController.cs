@@ -21,7 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Web.Mvc;
-using Weave;
+using WeaveCore;
 
 namespace WeaveServer.Controllers {
     public class WeaveController : Controller {

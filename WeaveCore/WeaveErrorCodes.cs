@@ -18,7 +18,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
-namespace Weave {
+namespace WeaveCore {
     public enum WeaveErrorCodes {
         InvalidProtocol = 1,
         IncorrectCaptcha = 2,

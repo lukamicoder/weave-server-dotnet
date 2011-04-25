@@ -23,9 +23,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Web.Script.Serialization;
-using Weave.Models;
+using WeaveCore.Models;
 
-namespace Weave {
+namespace WeaveCore {
     class WeaveBasicObject {
         Collection<string> _error = new Collection<string>();
         JavaScriptSerializer _jss = new JavaScriptSerializer();

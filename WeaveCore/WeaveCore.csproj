@@ -8,8 +8,8 @@
     <ProjectGuid>{0826D506-3A67-4A33-8BEA-0A211AA9A153}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Weave</RootNamespace>
-    <AssemblyName>Weave</AssemblyName>
+    <RootNamespace>WeaveCore</RootNamespace>
+    <AssemblyName>WeaveCore</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />

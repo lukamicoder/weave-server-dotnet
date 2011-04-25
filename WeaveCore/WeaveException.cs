@@ -18,15 +18,12 @@
  * Boston, MA 02111-1307, USA.
  */
 
-using System;
-using System.Collections.Generic;
+namespace WeaveCore {
+    public class WeaveException : System.Exception {
+        public int Code { get; set; }
 
-namespace Weave.Models {
-    public partial class User {
-        public Int64 UserId { get; set; }
-        public string UserName { get; set; }
-        public string Md5 { get; set; }
-
-        public ICollection<Wbo> Wbos { get; set; }
+        public WeaveException(string message, int code) : base(message) {
+            Code = code;
+        }
     }
 }

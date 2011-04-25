@@ -22,7 +22,7 @@ using System;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
-using Weave;
+using WeaveCore;
 
 namespace WeaveServer.Controllers {
     public class AdminController : Controller {

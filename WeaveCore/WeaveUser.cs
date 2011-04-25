@@ -26,7 +26,7 @@ using System.IO;
 using System.Text;
 using System.Web.Script.Serialization;
 
-namespace Weave {
+namespace WeaveCore {
     public class WeaveUser {
         JavaScriptSerializer _jss;
         WeaveStorageUser _db;

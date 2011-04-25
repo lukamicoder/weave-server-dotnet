@@ -21,7 +21,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Weave {
+namespace WeaveCore {
     static class WeaveCollectionDictionary {
         private static Dictionary<short, string> _key = new Dictionary<short, string>
                                                       {

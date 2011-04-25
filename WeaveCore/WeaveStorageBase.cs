@@ -28,9 +28,9 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Linq;
-using Weave.Models;
+using WeaveCore.Models;
 
-namespace Weave {
+namespace WeaveCore {
 	abstract class WeaveStorageBase {
 		private string _connString;
 
