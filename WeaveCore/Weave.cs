@@ -27,9 +27,9 @@ using System.Text;
 using System.Web.Script.Serialization;
 
 namespace WeaveCore {
-    public class WeaveUser {
+    public class Weave {
         JavaScriptSerializer _jss;
-        WeaveStorageUser _db;
+        WeaveStorage _db;
         WeaveRequest _req;
 
         public Dictionary<string, string> Headers { get; private set; }
@@ -37,7 +37,7 @@ namespace WeaveCore {
         public int ErrorStatusCode { get; private set; }
         public string Response { get; private set; }
 
-        public WeaveUser(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {
+        public Weave(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {
             _req = new WeaveRequest(serverVariables, queryString, rawUrl, inputStream);
 
             _jss = new JavaScriptSerializer();
@@ -55,7 +55,7 @@ namespace WeaveCore {
             }
 
             try {
-                _db = new WeaveStorageUser();
+                _db = new WeaveStorage();
 
                 if (!_db.AuthenticateUser(_req.UserName, _req.Password)) {
                     Response = ReportProblem("Authentication failed", 401);

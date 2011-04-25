@@ -59,7 +59,7 @@
     <Compile Include="Models\WeaveContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WeaveCollectionDictionary.cs" />
-    <Compile Include="WeaveUser.cs" />
+    <Compile Include="Weave.cs" />
     <Compile Include="WeaveAdmin.cs" />
     <Compile Include="WeaveBasicObject.cs" />
     <Compile Include="WeaveErrorCodes.cs" />
@@ -69,7 +69,7 @@
     <Compile Include="WeaveResultList.cs" />
     <Compile Include="WeaveStorageAdmin.cs" />
     <Compile Include="WeaveStorageBase.cs" />
-    <Compile Include="WeaveStorageUser.cs" />
+    <Compile Include="WeaveStorage.cs" />
     <Compile Include="WeaveValidation.cs" />
   </ItemGroup>
   <ItemGroup>
