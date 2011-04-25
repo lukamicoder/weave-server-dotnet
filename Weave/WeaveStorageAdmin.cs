@@ -26,7 +26,7 @@ using System.Linq;
 using Weave.Models;
 
 namespace Weave {
-    class WeaveStorageAdmin : WeaveStorage {
+    class WeaveStorageAdmin : WeaveStorageBase {
         public List<object> GetUserList() {
             List<object> list = new List<object>();
 

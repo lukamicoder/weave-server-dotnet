@@ -28,7 +28,7 @@ using System.Transactions;
 using Weave.Models;
 
 namespace Weave {
-    class WeaveStorageUser : WeaveStorage {
+    class WeaveStorageUser : WeaveStorageBase {
         public double GetMaxTimestamp(string collection) {
             double result = 0;
 

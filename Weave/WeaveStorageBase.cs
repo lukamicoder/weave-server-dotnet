@@ -31,7 +31,7 @@ using System.Linq;
 using Weave.Models;
 
 namespace Weave {
-	abstract class WeaveStorage {
+	abstract class WeaveStorageBase {
 		private string _connString;
 
 		public Int64 UserId { get; private set; }
