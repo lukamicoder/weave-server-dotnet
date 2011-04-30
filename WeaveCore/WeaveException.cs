@@ -18,12 +18,22 @@
  * Boston, MA 02111-1307, USA.
  */
 
+using System;
+using System.Runtime.Serialization;
+using System.Security.Permissions;
+
 namespace WeaveCore {
-    public class WeaveException : System.Exception {
+    [Serializable]
+    public class WeaveException : Exception {
         public int Code { get; set; }
 
         public WeaveException(string message, int code) : base(message) {
             Code = code;
+        }
+
+        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context) {
+            base.GetObjectData(info, context);
         }
     }
 }
