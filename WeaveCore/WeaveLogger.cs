@@ -22,8 +22,6 @@ using System;
 using System.Configuration;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Principal;
 
 namespace WeaveCore {
     enum LogType {
@@ -32,62 +30,30 @@ namespace WeaveCore {
         Warning = 2,
     }
 
-    internal static class NativeMethods {
-        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, int dwLogonType, int dwLogonProvider, ref IntPtr phToken);
-    }
-
     static class WeaveLogger {
         public static void WriteMessage(string msg, LogType type) {
-            const string appName = "Weave Server";
-            string login = ConfigurationManager.AppSettings["LoggingUser.UserName"];
-            string password = ConfigurationManager.AppSettings["LoggingUser.Password"];
-            string domain = ConfigurationManager.AppSettings["LoggingUser.Domain"];
+            string sourceName = ConfigurationManager.AppSettings["EventLogSourceName"];
 
-            if (String.IsNullOrEmpty(login) || String.IsNullOrEmpty(password) || String.IsNullOrEmpty(domain)) {
+            if (String.IsNullOrEmpty(sourceName)|| !EventLog.SourceExists(sourceName)) {
                 return;
             }
 
-            IntPtr token = IntPtr.Zero;
-            NativeMethods.LogonUser(login, domain, password, 2, 0, ref token);
-
-            if (token == IntPtr.Zero) {
-                return;
-            }
-
-            using (WindowsIdentity identity = new WindowsIdentity(token)) {
-                WindowsImpersonationContext impersonationContext = null;
-
-                try {
-                    impersonationContext = identity.Impersonate();
-
-                    if (!EventLog.SourceExists(appName)) {
-                        EventLog.CreateEventSource(appName, "Application");
-                    }
-
-                    using (EventLog eventLog = new EventLog()) {
-                        eventLog.Source = appName;
-                        switch (type) {
-                            case LogType.Error:
-                                StackTrace stackTrace = new StackTrace();
-                                StackFrame stackFrame = stackTrace.GetFrame(1);
-                                MethodBase methodBase = stackFrame.GetMethod();
-                                msg = "(" + methodBase.ReflectedType.Name + "." + methodBase.Name + ") " + msg;
-                                eventLog.WriteEntry(msg, EventLogEntryType.Error);
-                                break;
-                            case LogType.Warning:
-                                eventLog.WriteEntry(msg, EventLogEntryType.Warning);
-                                break;
-                            case LogType.Information:
-                                eventLog.WriteEntry(msg, EventLogEntryType.Information);
-                                break;
-                        }
-                    }
-                } finally {
-                    if (impersonationContext != null) {
-                        impersonationContext.Undo();
-                    }
+            using (EventLog eventLog = new EventLog()) {
+                eventLog.Source = sourceName;
+                switch (type) {
+                    case LogType.Error:
+                        StackTrace stackTrace = new StackTrace();
+                        StackFrame stackFrame = stackTrace.GetFrame(1);
+                        MethodBase methodBase = stackFrame.GetMethod();
+                        msg = "(" + methodBase.ReflectedType.Name + "." + methodBase.Name + ") " + msg;
+                        eventLog.WriteEntry(msg, EventLogEntryType.Error);
+                        break;
+                    case LogType.Warning:
+                        eventLog.WriteEntry(msg, EventLogEntryType.Warning);
+                        break;
+                    case LogType.Information:
+                        eventLog.WriteEntry(msg, EventLogEntryType.Information);
+                        break;
                 }
             }
         }
