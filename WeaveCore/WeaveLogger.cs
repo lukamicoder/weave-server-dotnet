@@ -22,6 +22,7 @@ using System;
 using System.Configuration;
 using System.Diagnostics;
 using System.Reflection;
+using System.Security;
 
 namespace WeaveCore {
     enum LogType {
@@ -34,7 +35,15 @@ namespace WeaveCore {
         public static void WriteMessage(string msg, LogType type) {
             string sourceName = ConfigurationManager.AppSettings["EventLogSourceName"];
 
-            if (String.IsNullOrEmpty(sourceName)|| !EventLog.SourceExists(sourceName)) {
+            if (String.IsNullOrEmpty(sourceName)) {
+                return;
+            }
+
+            try {
+                if (!EventLog.SourceExists(sourceName)) {
+                    return;
+                }
+            } catch (SecurityException) {
                 return;
             }
 
