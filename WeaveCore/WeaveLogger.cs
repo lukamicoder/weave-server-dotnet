@@ -30,55 +30,64 @@ namespace WeaveCore {
         Error = 0,
         Information = 1,
         Warning = 2,
-        Debug = 3,
+    }
+
+    internal static class NativeMethods {
+        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, int dwLogonType, int dwLogonProvider, ref IntPtr phToken);
     }
 
     static class WeaveLogger {
-        [DllImport("advapi32.dll", CallingConvention = CallingConvention.StdCall)]
-        public static extern bool LogonUser(string lpszUsername, string lpszDomain, string lpszPassword, int dwLogonType, int dwLogonProvider, ref IntPtr phToken);
-
         public static void WriteMessage(string msg, LogType type) {
             const string appName = "Weave Server";
-            if (!EventLog.SourceExists(appName)) {
-                EventLog.CreateEventSource(appName, "Application");
+            string login = ConfigurationManager.AppSettings["LoggingUser.UserName"];
+            string password = ConfigurationManager.AppSettings["LoggingUser.Password"];
+            string domain = ConfigurationManager.AppSettings["LoggingUser.Domain"];
+
+            if (String.IsNullOrEmpty(login) || String.IsNullOrEmpty(password) || String.IsNullOrEmpty(domain)) {
+                return;
             }
 
             IntPtr token = IntPtr.Zero;
-            LogonUser(ConfigurationManager.AppSettings["LoggingUser.UserName"],
-                      ConfigurationManager.AppSettings["LoggingUser.Domain"],
-                      ConfigurationManager.AppSettings["LoggingUser.Password"], 2, 0, ref token);
+            NativeMethods.LogonUser(login, domain, password, 2, 0, ref token);
 
             if (token == IntPtr.Zero) {
                 return;
             }
 
-            WindowsIdentity identity = new WindowsIdentity(token);
-            WindowsImpersonationContext impersonationContext = null;
+            using (WindowsIdentity identity = new WindowsIdentity(token)) {
+                WindowsImpersonationContext impersonationContext = null;
 
-            try {
-                impersonationContext = identity.Impersonate();
+                try {
+                    impersonationContext = identity.Impersonate();
 
-                using (EventLog eventLog = new EventLog()) {
-                    eventLog.Source = appName;
-                    switch (type) {
-                        case LogType.Error:
-                            StackTrace stackTrace = new StackTrace();
-                            StackFrame stackFrame = stackTrace.GetFrame(1);
-                            MethodBase methodBase = stackFrame.GetMethod();
-                            msg = "(" + methodBase.ReflectedType.Name + "." + methodBase.Name + ") " + msg;
-                            eventLog.WriteEntry(msg, EventLogEntryType.Error);
-                            break;
-                        case LogType.Warning:
-                            eventLog.WriteEntry(msg, EventLogEntryType.Warning);
-                            break;
-                        case LogType.Information:
-                            eventLog.WriteEntry(msg, EventLogEntryType.Information);
-                            break;
+                    if (!EventLog.SourceExists(appName)) {
+                        EventLog.CreateEventSource(appName, "Application");
                     }
-                }
-            } finally {
-                if (impersonationContext != null) {
-                    impersonationContext.Undo();
+
+                    using (EventLog eventLog = new EventLog()) {
+                        eventLog.Source = appName;
+                        switch (type) {
+                            case LogType.Error:
+                                StackTrace stackTrace = new StackTrace();
+                                StackFrame stackFrame = stackTrace.GetFrame(1);
+                                MethodBase methodBase = stackFrame.GetMethod();
+                                msg = "(" + methodBase.ReflectedType.Name + "." + methodBase.Name + ") " + msg;
+                                eventLog.WriteEntry(msg, EventLogEntryType.Error);
+                                break;
+                            case LogType.Warning:
+                                eventLog.WriteEntry(msg, EventLogEntryType.Warning);
+                                break;
+                            case LogType.Information:
+                                eventLog.WriteEntry(msg, EventLogEntryType.Information);
+                                break;
+                        }
+                    }
+                } finally {
+                    if (impersonationContext != null) {
+                        impersonationContext.Undo();
+                    }
                 }
             }
         }
