@@ -23,13 +23,14 @@ using System.Configuration;
 using System.Web.Script.Serialization;
 
 namespace WeaveCore {
-    public class WeaveAdmin {
+    public class WeaveAdmin : WeaveLogEventBase {
         JavaScriptSerializer _jss;
         WeaveStorageAdmin _db;
 
         public WeaveAdmin() {
             _jss = new JavaScriptSerializer();
             _db = new WeaveStorageAdmin();
+            _db.LogEvent += OnLogEvent;
         }
 
         public string GetUserDetails(Int64 userId) {

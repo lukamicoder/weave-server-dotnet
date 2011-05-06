@@ -23,10 +23,15 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
 using WeaveCore;
+using WeaveServer.Services;
 
 namespace WeaveServer.Controllers {
     public class AdminController : Controller {
         WeaveAdmin _weaveAdmin = new WeaveAdmin();
+
+        public AdminController() {
+            _weaveAdmin.LogEvent += OnLogEvent;
+        }
 
         public ActionResult Index(FormCollection form) {
             if (form.Count == 0) {
@@ -38,7 +43,7 @@ namespace WeaveServer.Controllers {
             if (FormsAuthentication.Authenticate(user, pswd)) {
                 FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, "User");
                 string cookieStr = FormsAuthentication.Encrypt(ticket);
-                HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr) {Path = FormsAuthentication.FormsCookiePath};
+                HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr) { Path = FormsAuthentication.FormsCookiePath };
                 Response.Cookies.Add(cookie);
 
                 return RedirectToAction("Index", "Admin");
@@ -117,6 +122,10 @@ namespace WeaveServer.Controllers {
 
         public ActionResult PageNotFound() {
             return View("PageNotFound");
+        }
+
+        private void OnLogEvent(object source, WeaveLogEventArgs args) {
+            Logger.WriteMessage(args.Message, args.Type);
         }
     }
 }

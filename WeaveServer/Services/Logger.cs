@@ -21,17 +21,11 @@
 using System;
 using System.Configuration;
 using System.Diagnostics;
-using System.Reflection;
 using System.Security;
+using WeaveCore;
 
-namespace WeaveCore {
-    enum LogType {
-        Error = 0,
-        Information = 1,
-        Warning = 2,
-    }
-
-    static class WeaveLogger {
+namespace WeaveServer.Services {
+    static class Logger {
         public static void WriteMessage(string msg, LogType type) {
             string sourceName = ConfigurationManager.AppSettings["EventLogSourceName"];
 
@@ -51,17 +45,13 @@ namespace WeaveCore {
                 eventLog.Source = sourceName;
                 switch (type) {
                     case LogType.Error:
-                        StackTrace stackTrace = new StackTrace();
-                        StackFrame stackFrame = stackTrace.GetFrame(1);
-                        MethodBase methodBase = stackFrame.GetMethod();
-                        msg = "(" + methodBase.ReflectedType.Name + "." + methodBase.Name + ") " + msg;
-                        eventLog.WriteEntry(msg, EventLogEntryType.Error);
+                        eventLog.WriteEntry(msg, EventLogEntryType.Error, 10);
                         break;
                     case LogType.Warning:
-                        eventLog.WriteEntry(msg, EventLogEntryType.Warning);
+                        eventLog.WriteEntry(msg, EventLogEntryType.Warning, 20);
                         break;
                     case LogType.Information:
-                        eventLog.WriteEntry(msg, EventLogEntryType.Information);
+                        eventLog.WriteEntry(msg, EventLogEntryType.Information, 30);
                         break;
                 }
             }

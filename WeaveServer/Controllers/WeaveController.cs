@@ -22,11 +22,14 @@ using System;
 using System.Collections.Generic;
 using System.Web.Mvc;
 using WeaveCore;
+using WeaveServer.Services;
 
 namespace WeaveServer.Controllers {
     public class WeaveController : Controller {
         public ContentResult Index() {
             Weave weave = new Weave(Request.ServerVariables, Request.QueryString, Request.RawUrl, Request.InputStream);
+
+            weave.LogEvent += OnLogEvent;
 
             if (weave.Response != null && weave.Headers != null && weave.Headers.Count > 0) {
                 foreach (KeyValuePair<string, string> pair in weave.Headers) {
@@ -40,6 +43,10 @@ namespace WeaveServer.Controllers {
             }
 
             return Content(weave.Response);
+        }
+
+        private void OnLogEvent(object source, WeaveLogEventArgs args) {
+            Logger.WriteMessage(args.Message, args.Type);
         }
     }
 }

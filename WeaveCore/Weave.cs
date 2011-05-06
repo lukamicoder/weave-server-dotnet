@@ -27,7 +27,7 @@ using System.Text;
 using System.Web.Script.Serialization;
 
 namespace WeaveCore {
-    public class Weave {
+    public class Weave : WeaveLogEventBase {
         JavaScriptSerializer _jss;
         WeaveStorage _db;
         WeaveRequest _req;
@@ -56,6 +56,7 @@ namespace WeaveCore {
 
             try {
                 _db = new WeaveStorage();
+                _db.LogEvent += OnLogEvent;
 
                 if (!_db.AuthenticateUser(_req.UserName, _req.Password)) {
                     Response = ReportProblem("Authentication failed", 401);
@@ -308,7 +309,7 @@ namespace WeaveCore {
                 try {
                     dic = (Dictionary<string, object>)objItem;
                 } catch (InvalidCastException) {
-                    WeaveLogger.WriteMessage("Failed to extract wbo from POST content.", LogType.Error);
+                    OnLogEvent(this, new WeaveLogEventArgs("Failed to extract wbo from POST content.", LogType.Error));
                     continue;
                 }
 
@@ -316,7 +317,7 @@ namespace WeaveCore {
                     if (wbo.Id != null) {
                         resultList.FailedIds[wbo.Id] = new Collection<string> { "Failed to populate wbo." };
                     } else {
-                        WeaveLogger.WriteMessage("Failed to populate wbo.", LogType.Error);
+                        OnLogEvent(this, new WeaveLogEventArgs("Failed to populate wbo.", LogType.Error));
                     }
                     continue;
                 }
