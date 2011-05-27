@@ -27,11 +27,12 @@ $(document).ready(function () {
 
     if ("undefined" == typeof (userTable)) {
         var columns = [];
-        columns[1] = ["User", "tdCell", "tdCell"];
+        columns[1] = ["User", "tdUser", "tdUser"];
         columns[2] = ["Payload", "tdLoad", "tdLoad"];
-        columns[3] = ["Last Sync Date", "tdCell", "tdCell"];
-        columns[4] = ["&nbsp;", "", "tdLink"];
+        columns[3] = ["First Sync", "tdDate", "tdDate"];
+        columns[4] = ["Last Sync", "tdDate", "tdDate"];
         columns[5] = ["&nbsp;", "", "tdLink"];
+        columns[6] = ["&nbsp;", "", "tdLink"];
         userTable = new JSONTable('tableContainer', 'userTable', columns);
     }
 
@@ -165,7 +166,7 @@ function loadUserTable() {
             var rows = new Array();
             if (users !== undefined) {
                 if (users.length == 0) {
-                    var row = ["&nbsp;", "", "", "", ""];
+                    var row = ["&nbsp;", "", "", "", "", ""];
                     rows.push(row);
                 } else {
                     for (var i = 0; i < users.length; i++) {
@@ -174,13 +175,19 @@ function loadUserTable() {
                             var id = users[i].UserId;
                             var size = users[i].Payload;
 
-                            var date = "";
-                            if (users[i].Date > 0) {
-                                var date = new Date(users[i].Date);
-                                date = date.format();
+                            var datemin = "";
+                            if (users[i].DateMin > 0) {
+                                var datemin = new Date(users[i].DateMin);
+                                datemin = datemin.format();
                             }
 
-                            if (date !== "") {
+                            var datemax = "";
+                            if (users[i].DateMax > 0) {
+                                var datemax = new Date(users[i].DateMax);
+                                datemax = datemax.format();
+                            }
+
+                            if (datemax !== "") {
                                 var del = document.createElement("a");
                                 $(del).attr('href', "javascript:showDetails('" + id + "', '" + username + "');");
                                 $(del).append(document.createTextNode('details'));
@@ -192,15 +199,15 @@ function loadUserTable() {
                             $(edit).attr('href', "javascript:openDialog('del', '" + id + "', '" + username + "');");
                             $(edit).append(document.createTextNode('delete'));
 
-                            var row = [username, size, date, del, edit];
+                            var row = [username, size, datemin, datemax, del, edit];
                         } else {
-                            var row = ["&nbsp;", "", "", "", ""];
+                            var row = ["&nbsp;", "", "", "", "", ""];
                         }
 
                         rows.push(row);
                     }
                 }
-            } 
+            }
 
             userTable.loadData(rows);
         },

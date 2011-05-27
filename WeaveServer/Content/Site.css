@@ -26,8 +26,9 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 .JSONTable td { padding: .3em; border: solid 1px #888; vertical-align: top; }
 .JSONTable .evenRow { background: #ddd; }
 .JSONTable .oddRow { background: #fff; }
-.JSONTable .tdCell { width: 160px; padding-left: 5px; text-align: left; }
-.JSONTable .tdLoad { width: 40px; padding-left: 5px; text-align: left; }
+.JSONTable .tdUser { width: 90px; padding-left: 5px; text-align: left; }
+.JSONTable .tdDate { width: 110px; padding-left: 5px; text-align: left; }
+.JSONTable .tdLoad { width: 40px; padding-left: 5px; text-align: center; }
 .JSONTable .tdLink { width: 30px; color: #666666; text-align: center; }
 
 #dialogContent #error { color: Red; padding-bottom: 5px; text-align: center; font-size: smaller; display: none; }
