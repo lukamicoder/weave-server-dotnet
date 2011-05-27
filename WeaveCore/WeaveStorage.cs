@@ -41,7 +41,7 @@ namespace WeaveCore {
                     int coll = WeaveCollectionDictionary.GetKey(collection);
                     var time = (from wbos in
                                     (from wbos in context.Wbos
-                                     where wbos.UserId == 2 && wbos.Collection == coll
+                                     where wbos.UserId == UserId && wbos.Collection == coll
                                      select new { wbos.Modified })
                                 group wbos by new { wbos.Modified }
                                     into g
@@ -86,7 +86,7 @@ namespace WeaveCore {
             using (WeaveContext context = new WeaveContext(ConnectionString)) {
                 try {
                     var coll = from wbos in context.Wbos
-                               where wbos.UserId == 2
+                               where wbos.UserId == UserId
                                group wbos by new { wbos.Collection }
                                    into g
                                    select new {
