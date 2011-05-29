@@ -156,42 +156,5 @@ namespace WeaveCore {
 
             return result;
         }
-
-        public int Cleanup(int days) {
-            if (days > 0) {
-                TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-                const int dayInSecond = 60 * 60 * 24;
-                double deleteTime = ts.TotalSeconds - (dayInSecond * days);
-
-                using (WeaveContext context = new WeaveContext()) {
-                    try {
-                        var wbosToDelete = from wbo in context.Wbos
-                                           where wbo.Modified < deleteTime &&
-                                                 (wbo.Collection == 3 ||
-                                                  wbo.Collection == 4 ||
-                                                  wbo.Collection == 9 ||
-                                                  wbo.Payload == null)
-                                           select wbo;
-
-                        int total = wbosToDelete.ToList().Count();
-
-                        foreach (var wboToDelete in wbosToDelete) {
-                            context.Wbos.Remove(wboToDelete);
-                        }
-
-                        context.SaveChanges();
-
-                        RaiseLogEvent(this, String.Format("Cleanup: {0} records have been deleted.", total), LogType.Information);
-                        return total;
-                    } catch (EntityException x) {
-                        RaiseLogEvent(this, x.Message, LogType.Error);
-
-                        return -1;
-                    }
-                }
-            }
-
-            return -1;
-        }
     }
 }
