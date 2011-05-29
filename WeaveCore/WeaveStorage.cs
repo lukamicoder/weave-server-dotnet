@@ -23,11 +23,16 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Transactions;
 using WeaveCore.Models;
 
 namespace WeaveCore {
-    class WeaveStorage : WeaveStorageBase {
+    class WeaveStorage : WeaveLogEventBase {
+        public int UserId { get; private set; }
+
+        #region Collection
         public double GetMaxTimestamp(string collection) {
             double result = 0;
 
@@ -168,7 +173,9 @@ namespace WeaveCore {
 
             return dic;
         }
+        #endregion
 
+        #region Wbo
         public void SaveWbo(WeaveBasicObject wbo) {
             using (WeaveContext context = new WeaveContext()) {
                 try {
@@ -273,7 +280,7 @@ namespace WeaveCore {
         }
 
         public void DeleteWboList(string collection, string id, string newer, string older, string sort,
-                                 string limit, string offset, string ids, string indexAbove, string indexBelow) {
+                                  string limit, string offset, string ids, string indexAbove, string indexBelow) {
 
             int coll = WeaveCollectionDictionary.GetKey(collection);
             using (WeaveContext context = new WeaveContext()) {
@@ -372,7 +379,7 @@ namespace WeaveCore {
         }
 
         public IList<WeaveBasicObject> RetrieveWboList(string collection, string id, bool full, string newer, string older, string sort, string limit, string offset,
-                                                      string ids, string indexAbove, string indexBelow) {
+                                                       string ids, string indexAbove, string indexBelow) {
             IList<WeaveBasicObject> wboList = new List<WeaveBasicObject>();
             int coll = WeaveCollectionDictionary.GetKey(collection);
 
@@ -458,6 +465,39 @@ namespace WeaveCore {
 
             return wboList;
         }
+        #endregion
+
+        #region Admin
+        public bool AuthenticateUser(string userName, string password) {
+            bool result = false;
+
+            using (WeaveContext context = new WeaveContext()) {
+                string hash = HashString(password);
+
+                var id = (from u in context.Users
+                          where u.UserName == userName && u.Md5 == hash
+                          select u.UserId).SingleOrDefault();
+
+                if (id != 0) {
+                    UserId = id;
+                    result = true;
+                }
+            }
+
+            return result;
+        }
+
+        public string HashString(string value) {
+            StringBuilder hashedString = new StringBuilder();
+            using (MD5CryptoServiceProvider serviceProvider = new MD5CryptoServiceProvider()) {
+                byte[] data = serviceProvider.ComputeHash(Encoding.ASCII.GetBytes(value));
+                for (int i = 0; i < data.Length; i++) {
+                    hashedString.Append(data[i].ToString("x2"));
+                }
+            }
+
+            return hashedString.ToString();
+        }
 
         public void ChangePassword(string password) {
             if (String.IsNullOrEmpty(password)) {
@@ -480,5 +520,178 @@ namespace WeaveCore {
                 }
             }
         }
+
+        public List<object> GetUserList() {
+            List<object> list = new List<object>();
+
+            using (WeaveContext context = new WeaveContext()) {
+                try {
+                    var userList = (from u in context.Users
+                                    join w in context.Wbos on u.UserId equals w.UserId
+                                    into g
+                                    select new {
+                                        u.UserId,
+                                        u.UserName,
+                                        Payload = (Double?)g.Sum(p => p.PayloadSize),
+                                        DateMin = (Double?)g.Min(p => p.Modified),
+                                        DateMax = (Double?)g.Max(p => p.Modified)
+                                    }).ToList();
+
+                    foreach (var user in userList) {
+                        long userId = user.UserId;
+                        string userName = user.UserName;
+                        string payload = "";
+                        if (user.Payload != null) {
+                            double total = (user.Payload.Value * 1000) / 1024 / 1024;
+                            if (total >= 1024) {
+                                payload = Math.Round((total / 1024), 1) + "MB";
+                            } else if (total > 0) {
+                                payload = Math.Round(total, 1) + "KB";
+                            }
+                        }
+
+                        double dateMin = 0;
+                        if (user.DateMin != null) {
+                            dateMin = 1000 * user.DateMin.Value;
+                        }
+
+                        double dateMax = 0;
+                        if (user.DateMax != null) {
+                            dateMax = 1000 * user.DateMax.Value;
+                        }
+
+                        list.Add(new { UserId = userId, UserName = userName, Payload = payload, DateMin = dateMin, DateMax = dateMax });
+                    }
+                } catch (EntityException x) {
+                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return list;
+        }
+
+        public List<object> GetUserDetails(Int64 userId) {
+            List<object> list = new List<object>();
+            using (WeaveContext context = new WeaveContext()) {
+                try {
+                    var cts = from w in context.Wbos
+                              where w.UserId == userId
+                              group w by new { w.Collection } into g
+                              select new { g.Key.Collection, Count = (Int64)g.Count(), Payload = (double?)g.Sum(p => p.PayloadSize) };
+
+                    foreach (var p in cts) {
+                        //crypto, keys, meta
+                        if (p.Collection != 2 && p.Collection != 5 && p.Collection != 6) {
+                            string payload = "";
+                            if (p.Payload != null) {
+                                double total = (p.Payload.Value * 1000) / 1024 / 1024;
+                                if (total >= 1024) {
+                                    payload = Math.Round((total / 1024), 0) + "MB";
+                                } else if (total > 0) {
+                                    payload = Math.Round(total, 0) + "KB";
+                                }
+                            }
+
+                            list.Add(new { Collection = WeaveCollectionDictionary.GetValue(p.Collection), p.Count, Payload = payload });
+                        }
+                    }
+                } catch (EntityException x) {
+                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return list;
+        }
+
+        public bool CreateUser(string userName, string password) {
+            bool result = false;
+
+            if (!String.IsNullOrEmpty(userName)) {
+                using (WeaveContext context = new WeaveContext()) {
+                    try {
+                        string hash = HashString(password);
+                        User user = new User { UserName = userName, Md5 = hash };
+                        context.Users.Add(user);
+
+                        int x = context.SaveChanges();
+
+                        if (x != 0) {
+                            result = true;
+                            RaiseLogEvent(this, String.Format("{0} user account has been created.", userName), LogType.Information);
+                        }
+                    } catch (EntityException x) {
+                        RaiseLogEvent(this, x.Message, LogType.Error);
+                        throw new WeaveException("Database unavailable.", 503);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public bool IsUniqueUserName(string userName) {
+            bool result = false;
+
+            using (WeaveContext context = new WeaveContext()) {
+                try {
+                    var id = (from u in context.Users
+                              where u.UserName == userName
+                              select u.UserId).SingleOrDefault();
+
+                    if (id == 0) {
+                        result = true;
+                    }
+                } catch (EntityException x) {
+                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return result;
+        }
+
+        public bool DeleteUser(Int64 userId) {
+            string userName = "";
+            bool result = false;
+
+            using (WeaveContext context = new WeaveContext()) {
+                try {
+                    var wboList = (from wbos in context.Wbos
+                                   join users in context.Users on wbos.UserId equals users.UserId
+                                   where users.UserId == userId
+                                   select wbos).ToList();
+
+                    foreach (var del in wboList) {
+                        context.Wbos.Remove(del);
+                    }
+
+                    var user = (from u in context.Users
+                                where u.UserId == userId
+                                select u).SingleOrDefault();
+
+                    if (user != null) {
+                        userName = user.UserName;
+                        context.Users.Remove(user);
+                    }
+
+                    int x = context.SaveChanges();
+
+                    if (x != 0) {
+                        result = true;
+                        if (!String.IsNullOrEmpty(userName)) {
+                            RaiseLogEvent(this, String.Format("{0} user account has been deleted.", userName), LogType.Information);
+                        }
+                    }
+                } catch (EntityException x) {
+                    OnLogEvent(this, new WeaveLogEventArgs(x.Message, LogType.Error));
+                    throw new WeaveException("Database unavailable.", 503);
+                }
+            }
+
+            return result;
+        }
+        #endregion
     }
 }

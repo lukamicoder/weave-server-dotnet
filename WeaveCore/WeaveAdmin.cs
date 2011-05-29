@@ -19,17 +19,16 @@
  */
 
 using System;
-using System.Configuration;
 using System.Web.Script.Serialization;
 
 namespace WeaveCore {
     public class WeaveAdmin : WeaveLogEventBase {
         JavaScriptSerializer _jss;
-        WeaveStorageAdmin _db;
+        WeaveStorage _db;
 
         public WeaveAdmin() {
             _jss = new JavaScriptSerializer();
-            _db = new WeaveStorageAdmin();
+            _db = new WeaveStorage();
             _db.LogEvent += OnLogEvent;
         }
 

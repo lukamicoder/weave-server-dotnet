@@ -72,8 +72,6 @@
     <Compile Include="WeaveLogEventBase.cs" />
     <Compile Include="WeaveRequest.cs" />
     <Compile Include="WeaveResultList.cs" />
-    <Compile Include="WeaveStorageAdmin.cs" />
-    <Compile Include="WeaveStorageBase.cs" />
     <Compile Include="WeaveStorage.cs" />
     <Compile Include="WeaveValidation.cs" />
   </ItemGroup>
