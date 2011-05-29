@@ -107,14 +107,6 @@ namespace WeaveServer.Controllers {
             return View("DeleteUser");
         }
 
-        public ActionResult Cleanup() {
-            if (Request.IsLocal) {
-                return Content(_weaveAdmin.Cleanup() + "");
-            }
-
-            return View("PageNotFound");
-        }
-
         public ActionResult Logout() {
             FormsAuthentication.SignOut();
             return RedirectToAction("Index", "Admin");

@@ -84,15 +84,5 @@ namespace WeaveCore {
 
             return 0;
         }
-
-        public int Cleanup() {
-            string daysBeforeDelete = ConfigurationManager.AppSettings["DaysBeforeDelete"];
-            int days;
-            if (!String.IsNullOrEmpty(daysBeforeDelete) && Int32.TryParse(daysBeforeDelete, out days) && days != 0) {
-                return _db.Cleanup(days);
-            }
-
-            return -1;
-        }
     }
 }
