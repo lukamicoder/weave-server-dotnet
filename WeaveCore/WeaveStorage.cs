@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
-using System.Data.Objects;
 using System.Linq;
 using System.Transactions;
 using WeaveCore.Models;
@@ -36,7 +35,7 @@ namespace WeaveCore {
                 return 0;
             }
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     int coll = WeaveCollectionDictionary.GetKey(collection);
                     var time = (from wbos in
@@ -62,7 +61,7 @@ namespace WeaveCore {
         public IList<string> GetCollectionList() {
             IList<string> list = new List<string>();
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var coll = (from wbos in context.Wbos
                                 where wbos.UserId == UserId
@@ -83,7 +82,7 @@ namespace WeaveCore {
         public Dictionary<string, double> GetCollectionListWithTimestamps() {
             var dic = new Dictionary<string, double>();
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var coll = from wbos in context.Wbos
                                where wbos.UserId == UserId
@@ -108,7 +107,7 @@ namespace WeaveCore {
 
         public Dictionary<string, long> GetCollectionListWithCounts() {
             var dic = new Dictionary<string, long>();
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var cts = from w in context.Wbos
                               where w.UserId == UserId
@@ -130,7 +129,7 @@ namespace WeaveCore {
         public double GetStorageTotal() {
             double result;
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var total = (from u in context.Users
                                  where u.UserId == UserId
@@ -151,7 +150,7 @@ namespace WeaveCore {
 
         public Dictionary<string, int> GetCollectionStorageTotals() {
             var dic = new Dictionary<string, int>();
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var cts = from w in context.Wbos
                               where w.UserId == UserId
@@ -171,7 +170,7 @@ namespace WeaveCore {
         }
 
         public void SaveWbo(WeaveBasicObject wbo) {
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     Wbo modelWbo = wbo.GetModelWbo();
                     modelWbo.UserId = UserId;
@@ -182,20 +181,13 @@ namespace WeaveCore {
                                              w.Id == modelWbo.Id
                                        select w).SingleOrDefault();
 
-                    //if there's no payload (as opposed to blank), then update the metadata
-                    if (wbo.Payload != null) {
-                        if (wboToUpdate == null) {
-                            context.Wbos.AddObject(modelWbo);
-                        } else {
-                            wboToUpdate.Modified = modelWbo.Modified;
-                            wboToUpdate.SortIndex = modelWbo.SortIndex;
-                            wboToUpdate.Payload = modelWbo.Payload;
-                            wboToUpdate.PayloadSize = modelWbo.PayloadSize;
-                        }
+                    if (wboToUpdate == null) {
+                        context.Wbos.Add(modelWbo);
                     } else {
-                        if (modelWbo.SortIndex.HasValue) {
-                            wboToUpdate.SortIndex = modelWbo.SortIndex;
-                        }
+                        wboToUpdate.Modified = modelWbo.Modified;
+                        wboToUpdate.SortIndex = modelWbo.SortIndex;
+                        wboToUpdate.Payload = modelWbo.Payload;
+                        wboToUpdate.PayloadSize = modelWbo.PayloadSize;
                     }
 
                     context.SaveChanges();
@@ -206,28 +198,24 @@ namespace WeaveCore {
             }
         }
 
-        static readonly Func<WeaveContext, Int64, Int16, String, Wbo> SaveWboListQuery = CompiledQuery.Compile<WeaveContext, Int64, Int16, String, Wbo>(
-            (context, userId, collection, id) => (from wbos in context.Wbos
-                                                  where wbos.UserId == userId &&
-                                                        wbos.Collection == collection &&
-                                                        wbos.Id == id
-                                                  select wbos).SingleOrDefault());
-
         public void SaveWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList) {
             if (wboList != null && wboList.Count > 0) {
-                using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                using (WeaveContext context = new WeaveContext()) {
                     try {
-                        context.Connection.Open();
-                        using (TransactionScope transaction = new TransactionScope()) {
+                        //using (var transaction = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = System.Transactions.IsolationLevel.ReadCommitted })) {
                             foreach (WeaveBasicObject wbo in wboList) {
                                 try {
                                     Wbo modelWbo = wbo.GetModelWbo();
                                     modelWbo.UserId = UserId;
 
-                                    var wboToUpdate = SaveWboListQuery.Invoke(context, UserId, modelWbo.Collection, modelWbo.Id);
+                                    var wboToUpdate = (from wbos in context.Wbos
+                                                        where wbos.UserId == UserId &&
+                                                        wbos.Collection == modelWbo.Collection &&
+                                                        wbos.Id == modelWbo.Id
+                                                        select wbos).SingleOrDefault();
 
                                     if (wboToUpdate == null) {
-                                        context.Wbos.AddObject(modelWbo);
+                                        context.Wbos.Add(modelWbo);
                                     } else {
                                         wboToUpdate.Modified = modelWbo.Modified;
                                         wboToUpdate.SortIndex = modelWbo.SortIndex;
@@ -244,9 +232,9 @@ namespace WeaveCore {
                                 }
                             }
 
-                            transaction.Complete();
-                            context.AcceptAllChanges();
-                        }
+                        //    transaction.Complete();
+                        //}
+
                     } catch (EntityException x) {
                         RaiseLogEvent(this, x.Message, LogType.Error);
                         throw new WeaveException("Database unavailable.", 503);
@@ -258,7 +246,7 @@ namespace WeaveCore {
         public bool DeleteWbo(string id, string collection) {
             bool result = false;
             int coll = WeaveCollectionDictionary.GetKey(collection);
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var wboToDelete = (from wbo in context.Wbos
                                        where wbo.UserId == UserId &&
@@ -267,7 +255,7 @@ namespace WeaveCore {
                                        select wbo).SingleOrDefault();
 
                     if (wboToDelete != null) {
-                        context.DeleteObject(wboToDelete);
+                        context.Wbos.Remove(wboToDelete);
 
                         int x = context.SaveChanges();
 
@@ -288,7 +276,7 @@ namespace WeaveCore {
                                  string limit, string offset, string ids, string indexAbove, string indexBelow) {
 
             int coll = WeaveCollectionDictionary.GetKey(collection);
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var wbosToDelete = from wbo in context.Wbos
                                        where wbo.UserId == UserId && wbo.Collection == coll
@@ -338,8 +326,8 @@ namespace WeaveCore {
                     }
 
                     int lim;
-                    int off;
                     if (limit != null && Int32.TryParse(limit, out lim) && lim > 0) {
+                        int off;
                         if (offset != null && Int32.TryParse(limit, out off) && off > 0) {
                             wbosToDelete = wbosToDelete.Take(lim).Skip(off);
                         } else {
@@ -348,14 +336,14 @@ namespace WeaveCore {
                     }
 
                     foreach (var wboToDelete in wbosToDelete) {
-                        context.DeleteObject(wboToDelete);
+                        context.Wbos.Remove(wboToDelete);
                     }
 
                     context.SaveChanges();
                 } catch (EntityException x) {
                     RaiseLogEvent(this, x.Message, LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
-                } 
+                }
             }
         }
 
@@ -363,10 +351,8 @@ namespace WeaveCore {
             WeaveBasicObject wbo = new WeaveBasicObject();
 
             int coll = WeaveCollectionDictionary.GetKey(collection);
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
-                    context.Wbos.MergeOption = MergeOption.NoTracking;
-
                     var wboToGet = (from w in context.Wbos
                                     where w.UserId == UserId && w.Collection == coll && w.Id == id
                                     select w).SingleOrDefault();
@@ -390,10 +376,8 @@ namespace WeaveCore {
             IList<WeaveBasicObject> wboList = new List<WeaveBasicObject>();
             int coll = WeaveCollectionDictionary.GetKey(collection);
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
-                    context.Wbos.MergeOption = MergeOption.NoTracking;
-
                     var wbosToGet = from w in context.Wbos
                                     where w.UserId == UserId && w.Collection == coll
                                     select w;
@@ -442,8 +426,8 @@ namespace WeaveCore {
                     }
 
                     int lim;
-                    int off;
                     if (limit != null && Int32.TryParse(limit, out lim) && lim > 0) {
+                        int off;
                         if (offset != null && Int32.TryParse(limit, out off) && off > 0) {
                             wbosToGet = wbosToGet.Take(lim).Skip(off);
                         } else {
@@ -480,7 +464,7 @@ namespace WeaveCore {
                 throw new WeaveException("3", 404);
             }
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 string hash = HashString(password);
                 try {
                     var userToGet = (from u in context.Users

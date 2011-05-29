@@ -18,15 +18,17 @@
  * Boston, MA 02111-1307, USA.
  */
 
-using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace WeaveCore.Models {
-    public partial class User {
-        public Int64 UserId { get; set; }
+    public class User {
+        [Key, Column(Order = 0)]
+        public int UserId { get; set; }
+
         public string UserName { get; set; }
         public string Md5 { get; set; }
 
-        public ICollection<Wbo> Wbos { get; set; }
+        public virtual ICollection<Wbo> Wbos { get; set; }
     }
 }

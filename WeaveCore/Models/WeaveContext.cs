@@ -18,19 +18,15 @@
  * Boston, MA 02111-1307, USA.
  */
 
-using System.Data.Objects;
+using System.Data.Entity;
 
 namespace WeaveCore.Models {
-    class WeaveContext : ObjectContext {
-        public ObjectSet<User> Users { get; private set; }
-        public ObjectSet<Wbo> Wbos { get; private set; }
+    class WeaveContext : DbContext {
+        public DbSet<User> Users { get; set; }
+        public DbSet<Wbo> Wbos { get; set; }
 
-        public WeaveContext(string connectionString)
-            : base(connectionString, "WeaveEntities") {
-            Users = CreateObjectSet<User>();
-            Wbos = CreateObjectSet<Wbo>(); 
-            
-            this.Connection.ConnectionString = connectionString;     
+        public WeaveContext() {
+            Configuration.ValidateOnSaveEnabled = false;
         }
     }
 }

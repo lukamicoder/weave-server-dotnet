@@ -19,17 +19,27 @@
  */
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace WeaveCore.Models {
-    public partial class Wbo {
-        public Int64 UserId { get; set; }
+    public class Wbo {
+        [Key, Column(Order = 0)]
+        public int UserId { get; set; }
+
+        [Key, Column(Order = 1)]
         public string Id { get; set; }
+
+        [Key, Column(Order = 2)]
         public Int16 Collection { get; set; }
+
         public Double? Modified { get; set; }
         public Int32? SortIndex { get; set; }
+
+        [Column(TypeName = "ntext")]
         public string Payload { get; set; }
+
         public Int32 PayloadSize { get; set; }
 
-        public User User { get; set; }
+        public virtual User User { get; set; }
     }
 }

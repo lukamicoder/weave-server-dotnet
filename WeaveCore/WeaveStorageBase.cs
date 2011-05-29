@@ -19,12 +19,7 @@
  */
 
 using System;
-using System.Configuration;
 using System.Data;
-using System.Data.EntityClient;
-using System.Data.Objects;
-using System.Data.SQLite;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Linq;
@@ -32,106 +27,13 @@ using WeaveCore.Models;
 
 namespace WeaveCore {
     abstract class WeaveStorageBase : WeaveLogEventBase {
-        private string _connString;
-
-        public Int64 UserId { get; private set; }
-
-        public string ConnectionString {
-            get {
-                if (String.IsNullOrEmpty(_connString)) {
-                    GetConnectionString();
-                }
-
-                return _connString;
-            }
-        }
-
-        protected void GetConnectionString() {
-            if (ConfigurationManager.ConnectionStrings["Weave"] != null) {
-                var builder = new EntityConnectionStringBuilder();
-                string provider = ConfigurationManager.ConnectionStrings["Weave"].ProviderName;
-
-                if (provider.ToLower() == "system.data.sqlclient") {
-                    builder.Metadata = "res://*/Models.SQLServerModel.csdl|res://*/Models.SQLServerModel.ssdl|res://*/Models.SQLServerModel.msl";
-                    builder.Provider = provider;
-                    builder.ProviderConnectionString = ConfigurationManager.ConnectionStrings["Weave"].ConnectionString;
-                    _connString = builder.ToString();
-                } else {
-                    SetupSQLiteDatabase();
-                }
-            } else {
-                SetupSQLiteDatabase();
-            }
-        }
-
-        protected void SetupSQLiteDatabase() {
-            var builder = new EntityConnectionStringBuilder();
-            builder.Metadata = "res://*/Models.SQLiteModel.csdl|res://*/Models.SQLiteModel.ssdl|res://*/Models.SQLiteModel.msl";
-            builder.Provider = "System.Data.SQLite";
-
-            string dir = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
-
-            if (string.IsNullOrEmpty(dir)) {
-                dir = AppDomain.CurrentDomain.BaseDirectory;
-            }
-
-            string dbName = dir + Path.DirectorySeparatorChar + "Weave.db";
-
-            builder.ProviderConnectionString = "Data Source=" + dbName + ";";
-
-            _connString = builder.ToString();
-
-            FileInfo dbFile = new FileInfo(dbName);
-
-            if (dbFile.Exists && dbFile.Length == 0) {
-                dbFile.Delete();
-                dbFile = new FileInfo(dbName);
-            }
-
-            if (!dbFile.Exists) {
-                try {
-                    SQLiteConnection.CreateFile(dbName);
-                    CreateSQLiteTables();
-                    RaiseLogEvent(this, "SQLite database has been created.", LogType.Information);      
-                } catch (SQLiteException x) {
-                    RaiseLogEvent(this,x.Message, LogType.Error);
-                    throw new WeaveException("Database unavailable.", 503);
-                }
-            }
-        }
-
-        private void CreateSQLiteTables() {
-            const string cmd = @"
-				  BEGIN TRANSACTION;				
-				  CREATE TABLE Users (
-						UserId integer NOT NULL PRIMARY KEY AUTOINCREMENT, 
-						UserName varchar(32) NOT NULL, 
-						Md5 varchar(32) NOT NULL);
-				  CREATE TABLE Wbos (
-						UserId integer NOT NULL,
-						Id varchar(64) NOT NULL,
-						Collection smallint NOT NULL,
-						Modified double NULL,
-						SortIndex int NULL,
-						Payload text NULL,
-						PayloadSize int NULL,
-						PRIMARY KEY (UserId, Collection, Id),
-						FOREIGN KEY (UserId) REFERENCES Users(UserId));
-				  CREATE INDEX modifiedindex ON Wbos (UserId, Collection, Modified);
-				  END TRANSACTION;";
-
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
-                context.ExecuteStoreCommand(cmd);
-            }
-        }
+        public int UserId { get; private set; }
 
         public bool AuthenticateUser(string userName, string password) {
             bool result = false;
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 string hash = HashString(password);
-
-                context.Users.MergeOption = MergeOption.NoTracking;
 
                 var id = (from u in context.Users
                           where u.UserName == userName && u.Md5 == hash
@@ -162,7 +64,7 @@ namespace WeaveCore {
             string userName = "";
             bool result = false;
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var wboList = (from wbos in context.Wbos
                                    join users in context.Users on wbos.UserId equals users.UserId
@@ -170,7 +72,7 @@ namespace WeaveCore {
                                    select wbos).ToList();
 
                     foreach (var del in wboList) {
-                        context.DeleteObject(del);
+                        context.Wbos.Remove(del);
                     }
 
                     var user = (from u in context.Users
@@ -179,7 +81,7 @@ namespace WeaveCore {
 
                     if (user != null) {
                         userName = user.UserName;
-                        context.DeleteObject(user);
+                        context.Users.Remove(user);
                     }
 
                     int x = context.SaveChanges();

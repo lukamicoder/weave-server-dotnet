@@ -21,7 +21,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Objects;
 using System.Linq;
 using WeaveCore.Models;
 
@@ -30,7 +29,7 @@ namespace WeaveCore {
         public List<object> GetUserList() {
             List<object> list = new List<object>();
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
                     var userList = (from u in context.Users
                                     join w in context.Wbos on u.UserId equals w.UserId
@@ -46,10 +45,9 @@ namespace WeaveCore {
                     foreach (var user in userList) {
                         long userId = user.UserId;
                         string userName = user.UserName;
-                        double total;
                         string payload = "";
                         if (user.Payload != null) {
-                            total = (user.Payload.Value * 1000) / 1024 / 1024;
+                            double total = (user.Payload.Value * 1000) / 1024 / 1024;
                             if (total >= 1024) {
                                 payload = Math.Round((total / 1024), 1) + "MB";
                             } else if (total > 0) {
@@ -80,10 +78,8 @@ namespace WeaveCore {
 
         public List<object> GetUserDetails(Int64 userId) {
             List<object> list = new List<object>();
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
-                    context.Wbos.MergeOption = MergeOption.NoTracking;
-
                     var cts = from w in context.Wbos
                               where w.UserId == userId
                               group w by new { w.Collection } into g
@@ -92,10 +88,9 @@ namespace WeaveCore {
                     foreach (var p in cts) {
                         //crypto, keys, meta
                         if (p.Collection != 2 && p.Collection != 5 && p.Collection != 6) {
-                            double total;
                             string payload = "";
                             if (p.Payload != null) {
-                                total = (p.Payload.Value * 1000) / 1024 / 1024;
+                                double total = (p.Payload.Value * 1000) / 1024 / 1024;
                                 if (total >= 1024) {
                                     payload = Math.Round((total / 1024), 0) + "MB";
                                 } else if (total > 0) {
@@ -119,11 +114,11 @@ namespace WeaveCore {
             bool result = false;
 
             if (!String.IsNullOrEmpty(userName)) {
-                using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                using (WeaveContext context = new WeaveContext()) {
                     try {
                         string hash = HashString(password);
                         User user = new User { UserName = userName, Md5 = hash };
-                        context.Users.AddObject(user);
+                        context.Users.Add(user);
 
                         int x = context.SaveChanges();
 
@@ -144,10 +139,8 @@ namespace WeaveCore {
         public bool IsUniqueUserName(string userName) {
             bool result = false;
 
-            using (WeaveContext context = new WeaveContext(ConnectionString)) {
+            using (WeaveContext context = new WeaveContext()) {
                 try {
-                    context.Users.MergeOption = MergeOption.NoTracking;
-
                     var id = (from u in context.Users
                               where u.UserName == userName
                               select u.UserId).SingleOrDefault();
@@ -170,7 +163,7 @@ namespace WeaveCore {
                 const int dayInSecond = 60 * 60 * 24;
                 double deleteTime = ts.TotalSeconds - (dayInSecond * days);
 
-                using (WeaveContext context = new WeaveContext(ConnectionString)) {
+                using (WeaveContext context = new WeaveContext()) {
                     try {
                         var wbosToDelete = from wbo in context.Wbos
                                            where wbo.Modified < deleteTime &&
@@ -183,7 +176,7 @@ namespace WeaveCore {
                         int total = wbosToDelete.ToList().Count();
 
                         foreach (var wboToDelete in wbosToDelete) {
-                            context.DeleteObject(wboToDelete);
+                            context.Wbos.Remove(wboToDelete);
                         }
 
                         context.SaveChanges();
