@@ -219,7 +219,6 @@ namespace WeaveCore {
                     try {
                         context.Connection.Open();
                         using (TransactionScope transaction = new TransactionScope()) {
-
                             foreach (WeaveBasicObject wbo in wboList) {
                                 try {
                                     Wbo modelWbo = wbo.GetModelWbo();
@@ -227,24 +226,16 @@ namespace WeaveCore {
 
                                     var wboToUpdate = SaveWboListQuery.Invoke(context, UserId, modelWbo.Collection, modelWbo.Id);
 
-                                    if (wbo.Payload != null) {
-                                        if (wboToUpdate == null) {
-                                            context.Wbos.AddObject(modelWbo);
-                                        } else {
-                                            wboToUpdate.Modified = modelWbo.Modified;
-                                            wboToUpdate.SortIndex = modelWbo.SortIndex;
-                                            wboToUpdate.Payload = modelWbo.Payload;
-                                            wboToUpdate.PayloadSize = modelWbo.PayloadSize;
-                                        }
-                                        context.SaveChanges();
+                                    if (wboToUpdate == null) {
+                                        context.Wbos.AddObject(modelWbo);
                                     } else {
-                                        if (modelWbo.SortIndex.HasValue) {
-                                            wboToUpdate.SortIndex = modelWbo.SortIndex;
-                                        }
-
-                                        context.SaveChanges();
+                                        wboToUpdate.Modified = modelWbo.Modified;
+                                        wboToUpdate.SortIndex = modelWbo.SortIndex;
+                                        wboToUpdate.Payload = modelWbo.Payload;
+                                        wboToUpdate.PayloadSize = modelWbo.PayloadSize;
                                     }
 
+                                    context.SaveChanges();
                                     resultList.SuccessIds.Add(wbo.Id);
                                 } catch (UpdateException ex) {
                                     if (wbo.Id != null) {
