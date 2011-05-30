@@ -28,5 +28,8 @@ namespace WeaveCore.Models {
         public WeaveContext() {
             Configuration.ValidateOnSaveEnabled = false;
         }
+        protected override void OnModelCreating(DbModelBuilder modelBuilder) {
+            modelBuilder.Entity<Wbo>().ToTable("Wbos");
+        }
     }
 }

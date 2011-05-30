@@ -21,9 +21,9 @@
 using System.Data.Entity;
 
 namespace WeaveCore.Models {
-    class WeaveInitializer : DropCreateDatabaseIfModelChanges<WeaveContext> {
+    class WeaveDbInitializer : DropCreateDatabaseIfModelChanges<WeaveContext> {
         protected override void Seed(WeaveContext context) {
-            context.Database.ExecuteSqlCommand("CREATE INDEX Index_UserId_Collection_Modified ON Wboes (UserId, Collection, Modified)");
+            context.Database.ExecuteSqlCommand("CREATE INDEX Index_UserId_Collection_Modified ON Wbos (UserId, Collection, Modified)");
         }
     }
 }
