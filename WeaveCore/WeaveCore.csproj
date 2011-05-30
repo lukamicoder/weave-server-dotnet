@@ -61,6 +61,7 @@
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\Wbo.cs" />
     <Compile Include="Models\WeaveContext.cs" />
+    <Compile Include="Models\WeaveInitializer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WeaveCollectionDictionary.cs" />
     <Compile Include="Weave.cs" />

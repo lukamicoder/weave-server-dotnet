@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
+using System.Data.Entity;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -31,6 +32,10 @@ using WeaveCore.Models;
 namespace WeaveCore {
     class WeaveStorage : WeaveLogEventBase {
         public int UserId { get; private set; }
+
+        public WeaveStorage() {
+            Database.SetInitializer(new WeaveInitializer());
+        }
 
         #region Collection
         public double GetMaxTimestamp(string collection) {
