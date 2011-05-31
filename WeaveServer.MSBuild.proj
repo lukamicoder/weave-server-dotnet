@@ -3,7 +3,7 @@
     <PropertyGroup>
         <Configuration>Release</Configuration>
         <ApplicationName>WeaveServer</ApplicationName>
-        <OutputPath>$(MSBuildProjectDirectory)\Output</OutputPath>
+        <OutputPath>$(MSBuildProjectDirectory)\_Output</OutputPath>
     </PropertyGroup>
     <Target Name="Build">
         <Message Text="%0D%0AInitial Cleanup" />

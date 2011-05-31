@@ -45,17 +45,14 @@ namespace WeaveCore {
         public WeaveErrorCodes ErrorMessage { get; private set; }
         public int ErrorCode { get; private set; }
 
-        public WeaveRequest() {
-            SetRequestTime();
-        }
-
         public WeaveRequest(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {
             if (serverVariables == null || serverVariables.Count == 0 || String.IsNullOrEmpty(rawUrl)) {
                 IsValid = false;
                 return;
             }
 
-            SetRequestTime();
+            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+            RequestTime = Math.Round(ts.TotalSeconds, 2); 
 
             ServerVariables = serverVariables;
             QueryString = queryString;
@@ -76,11 +73,6 @@ namespace WeaveCore {
             if (IsValid) {
                 Validate();
             }
-        }
-
-        private void SetRequestTime() {
-            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-            RequestTime = Math.Round(ts.TotalSeconds, 2);           
         }
 
         private void ProcessUrl(string rawUrl) {

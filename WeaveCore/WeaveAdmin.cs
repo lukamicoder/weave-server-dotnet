@@ -32,7 +32,7 @@ namespace WeaveCore {
             _db.LogEvent += OnLogEvent;
         }
 
-        public string GetUserDetails(Int64 userId) {
+        public string GetUserDetails(Int32 userId) {
             try {
                 var list = _db.GetUserDetails(userId);
                 return _jss.Serialize(list);
@@ -50,7 +50,7 @@ namespace WeaveCore {
             }
         }
 
-        public string DeleteUser(Int64 userId) {
+        public string DeleteUser(Int32 userId) {
             string msg = "";
             if (!_db.DeleteUser(userId)) {
                 msg = "There was an error on deleting user.";
@@ -74,7 +74,7 @@ namespace WeaveCore {
             return msg;
         }
 
-        public Int64 AuthenticateUser(string userName, string password) {
+        public Int32 AuthenticateUser(string userName, string password) {
             try {
                 if (_db.AuthenticateUser(userName, password)) {
                     return _db.UserId;

@@ -85,22 +85,18 @@ namespace WeaveServer.Controllers {
         public ActionResult DeleteUser(FormCollection form) {
             string user = form["login"];
             string pswd = form["password"];
-            string result;
+            string result = "Incorrect username and/or password.";
 
             if (!String.IsNullOrEmpty(user) && !String.IsNullOrEmpty(pswd)) {
-                Int64 id = _weaveAdmin.AuthenticateUser(user, pswd);
+                Int32 id = _weaveAdmin.AuthenticateUser(user, pswd);
                 if (id != 0) {
                     result = _weaveAdmin.DeleteUser(id);
                     if (result == "") {
                         result = String.Format("{0} has been deleted from the database.", user);
                         ViewBag.ResultStyle = "color: Black;";
                     }
-                } else {
-                    result = "Incorrect username and/or password";
-                }
-            } else {
-                result = "Incorrect username and/or password";
-            }
+                } 
+            } 
 
             ViewBag.ResultMessage = result;
 

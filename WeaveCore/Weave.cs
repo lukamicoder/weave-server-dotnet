@@ -309,7 +309,7 @@ namespace WeaveCore {
                 try {
                     dic = (Dictionary<string, object>)objItem;
                 } catch (InvalidCastException) {
-                    OnLogEvent(this, new WeaveLogEventArgs("Failed to extract wbo from POST content.", LogType.Error));
+                    RaiseLogEvent(this, "Failed to extract wbo from POST content.", LogType.Error);
                     continue;
                 }
 
@@ -317,7 +317,7 @@ namespace WeaveCore {
                     if (wbo.Id != null) {
                         resultList.FailedIds[wbo.Id] = new Collection<string> { "Failed to populate wbo." };
                     } else {
-                        OnLogEvent(this, new WeaveLogEventArgs("Failed to populate wbo.", LogType.Error));
+                        RaiseLogEvent(this, "Failed to populate wbo.", LogType.Error);
                     }
                     continue;
                 }
