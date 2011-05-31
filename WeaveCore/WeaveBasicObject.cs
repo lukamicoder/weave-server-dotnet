@@ -29,6 +29,7 @@ namespace WeaveCore {
     class WeaveBasicObject {
         Collection<string> _error = new Collection<string>();
         JavaScriptSerializer _jss = new JavaScriptSerializer();
+        private double _ttl = 2100000000;
 
         public string Id { get; set; }
         public string Collection { get; set; }
@@ -36,8 +37,13 @@ namespace WeaveCore {
         public string Payload { get; set; }
         public int? SortIndex { get; set; }
 
-        public int PayloadSize() {
-            return (String.IsNullOrEmpty(Payload)) ? 0 : Encoding.ASCII.GetByteCount(Payload);
+        public double Ttl {
+            get { return _ttl; }
+            set { _ttl = value;  }
+        }
+
+        public int? GetPayloadSize() {
+            return (String.IsNullOrEmpty(Payload)) ? null : (int?)Encoding.ASCII.GetByteCount(Payload);
         }
 
         public bool Populate(string json) {
@@ -85,6 +91,21 @@ namespace WeaveCore {
                 }
             }
 
+            if (dic.ContainsKey("ttl") && dic["ttl"] != DBNull.Value) {
+                try {
+                    double tmpTtl = Convert.ToDouble(dic["ttl"]);
+                    if (tmpTtl > 0 && tmpTtl < 31536000) {                      
+                        TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+                        double timeNow = Math.Round(ts.TotalSeconds, 2);
+                        Ttl = timeNow + tmpTtl;
+                    } else if (tmpTtl > 2100000000) {
+                        return false;
+                    }
+                } catch (InvalidCastException) {
+                    return false;
+                }
+            }
+
             if (dic.ContainsKey("payload") && dic["payload"] != DBNull.Value) {
                 Payload = dic["payload"] as string;
             }
@@ -109,7 +130,11 @@ namespace WeaveCore {
                 _error.Add("Invalid sortindex");
             }
 
-            if (PayloadSize() > 262144) {
+            if (Ttl > 2100000000 || Ttl < 0) {
+                _error.Add("Invalid expiration date");
+            }
+
+            if (GetPayloadSize() > 262144) {
                 //Larger than 256KByte
                 _error.Add("Payload too large");
             }
@@ -136,6 +161,16 @@ namespace WeaveCore {
                 dic.Add("payload", Payload);
             }
 
+            if (SortIndex.HasValue) {
+                dic.Add("sortindex", SortIndex.Value);
+            }
+
+            if (Collection != null) {
+                dic.Add("collection", Collection);
+            }
+
+            dic.Add("ttl", Ttl);
+
             return _jss.Serialize(dic);
         }
 
@@ -147,15 +182,16 @@ namespace WeaveCore {
             _error = new Collection<string>();
         }
 
-        public Wbo GetModelWbo() {
+        public Wbo ToModelWbo() {
             Wbo wbo = new Wbo();
 
             wbo.Collection = WeaveCollectionDictionary.GetKey(Collection);
             wbo.Id = Id;
             wbo.Modified = Modified;
             wbo.Payload = Payload;
-            wbo.PayloadSize = PayloadSize();
+            wbo.PayloadSize = GetPayloadSize();
             wbo.SortIndex = SortIndex;
+            wbo.Ttl = Ttl;
 
             return wbo;
         }

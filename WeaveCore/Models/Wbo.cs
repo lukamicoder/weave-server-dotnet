@@ -37,8 +37,9 @@ namespace WeaveCore.Models {
 
         [Column(TypeName = "ntext")]
         public string Payload { get; set; }
-
-        public Int32 PayloadSize { get; set; }
+        
+        public Int32? PayloadSize { get; set; }
+        public Double Ttl { get; set; }
 
         public virtual User User { get; set; }
     }

@@ -23,18 +23,22 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.Entity;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Transactions;
 using WeaveCore.Models;
 
 namespace WeaveCore {
     class WeaveStorage : WeaveLogEventBase {
         public int UserId { get; private set; }
+        double _timeNow;
 
         public WeaveStorage() {
-            Database.SetInitializer(new WeaveInitializer());
+            Database.SetInitializer(new WeaveDbInitializer());
+
+            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+            _timeNow = Math.Round(ts.TotalSeconds, 2); 
         }
 
         #region Collection
@@ -50,7 +54,7 @@ namespace WeaveCore {
                     int coll = WeaveCollectionDictionary.GetKey(collection);
                     var time = (from wbos in
                                     (from wbos in context.Wbos
-                                     where wbos.UserId == UserId && wbos.Collection == coll
+                                     where wbos.UserId == UserId && wbos.Collection == coll && wbos.Ttl > _timeNow
                                      select new { wbos.Modified })
                                 group wbos by new { wbos.Modified }
                                     into g
@@ -120,7 +124,7 @@ namespace WeaveCore {
             using (WeaveContext context = new WeaveContext()) {
                 try {
                     var cts = from w in context.Wbos
-                              where w.UserId == UserId
+                              where w.UserId == UserId && w.Ttl > _timeNow
                               group w by new { w.Collection } into g
                               select new { g.Key.Collection, ct = (Int64)g.Count() };
 
@@ -141,13 +145,15 @@ namespace WeaveCore {
 
             using (WeaveContext context = new WeaveContext()) {
                 try {
-                    var total = (from u in context.Users
-                                 where u.UserId == UserId
-                                 join w in context.Wbos on u.UserId equals w.UserId
-                                 into g
-                                 select new {
-                                     Payload = (double?)g.Sum(p => p.PayloadSize)
-                                 }).SingleOrDefault();
+                    var total = (from users in
+                                      (from u in context.Users
+                                       join w in context.Wbos on u.UserId equals w.UserId
+                                       where u.UserId == UserId && w.Ttl > _timeNow
+                                       select new { w.PayloadSize, u.UserId })
+                                  group users by new { users.UserId } into g
+                                  select new {
+                                      Payload = (double?)g.Sum(p => p.PayloadSize)
+                                  }).SingleOrDefault();
 
                     result = total.Payload.Value / 1024;
                 } catch (EntityException x) {
@@ -163,7 +169,7 @@ namespace WeaveCore {
             using (WeaveContext context = new WeaveContext()) {
                 try {
                     var cts = from w in context.Wbos
-                              where w.UserId == UserId
+                              where w.UserId == UserId && w.Ttl > _timeNow
                               group w by new { w.Collection } into g
                               select new { g.Key.Collection, Payload = (int?)g.Sum(p => p.PayloadSize) };
 
@@ -184,7 +190,7 @@ namespace WeaveCore {
         public void SaveWbo(WeaveBasicObject wbo) {
             using (WeaveContext context = new WeaveContext()) {
                 try {
-                    Wbo modelWbo = wbo.GetModelWbo();
+                    Wbo modelWbo = wbo.ToModelWbo();
                     modelWbo.UserId = UserId;
 
                     var wboToUpdate = (from w in context.Wbos
@@ -197,6 +203,7 @@ namespace WeaveCore {
                         context.Wbos.Add(modelWbo);
                     } else {
                         wboToUpdate.Modified = modelWbo.Modified;
+                        wboToUpdate.Ttl = modelWbo.Ttl;
                         wboToUpdate.SortIndex = modelWbo.SortIndex;
                         wboToUpdate.Payload = modelWbo.Payload;
                         wboToUpdate.PayloadSize = modelWbo.PayloadSize;
@@ -214,10 +221,11 @@ namespace WeaveCore {
             if (wboList != null && wboList.Count > 0) {
                 using (WeaveContext context = new WeaveContext()) {
                     try {
-                        //using (var transaction = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = System.Transactions.IsolationLevel.ReadCommitted })) {
+                        //using (var transaction = new System.Transactions.TransactionScope(System.Transactions.TransactionScopeOption.Required, 
+                        //    new System.Transactions.TransactionOptions { IsolationLevel = System.Transactions.IsolationLevel.ReadCommitted })) {
                             foreach (WeaveBasicObject wbo in wboList) {
                                 try {
-                                    Wbo modelWbo = wbo.GetModelWbo();
+                                    Wbo modelWbo = wbo.ToModelWbo();
                                     modelWbo.UserId = UserId;
 
                                     var wboToUpdate = (from wbos in context.Wbos
@@ -230,6 +238,7 @@ namespace WeaveCore {
                                         context.Wbos.Add(modelWbo);
                                     } else {
                                         wboToUpdate.Modified = modelWbo.Modified;
+                                        wboToUpdate.Ttl = modelWbo.Ttl;
                                         wboToUpdate.SortIndex = modelWbo.SortIndex;
                                         wboToUpdate.Payload = modelWbo.Payload;
                                         wboToUpdate.PayloadSize = modelWbo.PayloadSize;
@@ -366,7 +375,7 @@ namespace WeaveCore {
             using (WeaveContext context = new WeaveContext()) {
                 try {
                     var wboToGet = (from w in context.Wbos
-                                    where w.UserId == UserId && w.Collection == coll && w.Id == id
+                                    where w.UserId == UserId && w.Collection == coll && w.Id == id && w.Ttl > _timeNow
                                     select w).SingleOrDefault();
 
                     wbo.Id = id;
@@ -374,6 +383,7 @@ namespace WeaveCore {
                     wbo.Modified = wboToGet.Modified;
                     wbo.SortIndex = wboToGet.SortIndex;
                     wbo.Payload = wboToGet.Payload;
+                    wbo.Ttl = wboToGet.Ttl;
                 } catch (EntityException x) {
                     RaiseLogEvent(this, x.Message, LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
@@ -391,7 +401,7 @@ namespace WeaveCore {
             using (WeaveContext context = new WeaveContext()) {
                 try {
                     var wbosToGet = from w in context.Wbos
-                                    where w.UserId == UserId && w.Collection == coll
+                                    where w.UserId == UserId && w.Collection == coll && w.Ttl > _timeNow
                                     select w;
 
                     if (id != null) {
@@ -456,6 +466,7 @@ namespace WeaveCore {
                             wbo.Modified = wboToGet.Modified;
                             wbo.SortIndex = wboToGet.SortIndex;
                             wbo.Payload = wboToGet.Payload;
+                            wbo.Ttl = wboToGet.Ttl;
                         } else {
                             wbo.Id = id;
                         }
@@ -477,7 +488,7 @@ namespace WeaveCore {
             bool result = false;
 
             using (WeaveContext context = new WeaveContext()) {
-                string hash = HashString(password);
+                string hash = ConvertToHash(password);
 
                 var id = (from u in context.Users
                           where u.UserName == userName && u.Md5 == hash
@@ -492,16 +503,16 @@ namespace WeaveCore {
             return result;
         }
 
-        public string HashString(string value) {
-            StringBuilder hashedString = new StringBuilder();
+        private string ConvertToHash(string value) {
+            StringBuilder sb = new StringBuilder();
             using (MD5CryptoServiceProvider serviceProvider = new MD5CryptoServiceProvider()) {
                 byte[] data = serviceProvider.ComputeHash(Encoding.ASCII.GetBytes(value));
                 for (int i = 0; i < data.Length; i++) {
-                    hashedString.Append(data[i].ToString("x2"));
+                    sb.Append(data[i].ToString("x2"));
                 }
             }
 
-            return hashedString.ToString();
+            return sb.ToString();
         }
 
         public void ChangePassword(string password) {
@@ -510,7 +521,7 @@ namespace WeaveCore {
             }
 
             using (WeaveContext context = new WeaveContext()) {
-                string hash = HashString(password);
+                string hash = ConvertToHash(password);
                 try {
                     var userToGet = (from u in context.Users
                                      where u.UserId == UserId
@@ -576,7 +587,7 @@ namespace WeaveCore {
             return list;
         }
 
-        public List<object> GetUserDetails(Int64 userId) {
+        public List<object> GetUserDetails(Int32 userId) {
             List<object> list = new List<object>();
             using (WeaveContext context = new WeaveContext()) {
                 try {
@@ -616,7 +627,7 @@ namespace WeaveCore {
             if (!String.IsNullOrEmpty(userName)) {
                 using (WeaveContext context = new WeaveContext()) {
                     try {
-                        string hash = HashString(password);
+                        string hash = ConvertToHash(password);
                         User user = new User { UserName = userName, Md5 = hash };
                         context.Users.Add(user);
 
@@ -657,20 +668,14 @@ namespace WeaveCore {
             return result;
         }
 
-        public bool DeleteUser(Int64 userId) {
+        public bool DeleteUser(Int32 userId) {
             string userName = "";
             bool result = false;
 
             using (WeaveContext context = new WeaveContext()) {
                 try {
-                    var wboList = (from wbos in context.Wbos
-                                   join users in context.Users on wbos.UserId equals users.UserId
-                                   where users.UserId == userId
-                                   select wbos).ToList();
-
-                    foreach (var del in wboList) {
-                        context.Wbos.Remove(del);
-                    }
+                    const string sql = "DELETE FROM Wbos WHERE UserID = @userid";
+                    context.Database.ExecuteSqlCommand(sql, new SqlParameter("userid", UserId));
 
                     var user = (from u in context.Users
                                 where u.UserId == userId
@@ -690,7 +695,7 @@ namespace WeaveCore {
                         }
                     }
                 } catch (EntityException x) {
-                    OnLogEvent(this, new WeaveLogEventArgs(x.Message, LogType.Error));
+                    RaiseLogEvent(this, x.Message, LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
