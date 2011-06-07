@@ -38,7 +38,7 @@ namespace WeaveCore {
             Database.SetInitializer(new WeaveDbInitializer());
 
             TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-            _timeNow = Math.Round(ts.TotalSeconds, 2); 
+            _timeNow = Math.Round(ts.TotalSeconds, 2);
         }
 
         #region Collection
@@ -146,14 +146,14 @@ namespace WeaveCore {
             using (WeaveContext context = new WeaveContext()) {
                 try {
                     var total = (from users in
-                                      (from u in context.Users
-                                       join w in context.Wbos on u.UserId equals w.UserId
-                                       where u.UserId == UserId && w.Ttl > _timeNow
-                                       select new { w.PayloadSize, u.UserId })
-                                  group users by new { users.UserId } into g
-                                  select new {
-                                      Payload = (double?)g.Sum(p => p.PayloadSize)
-                                  }).SingleOrDefault();
+                                     (from u in context.Users
+                                      join w in context.Wbos on u.UserId equals w.UserId
+                                      where u.UserId == UserId && w.Ttl > _timeNow
+                                      select new { w.PayloadSize, u.UserId })
+                                 group users by new { users.UserId } into g
+                                 select new {
+                                     Payload = (double?)g.Sum(p => p.PayloadSize)
+                                 }).SingleOrDefault();
 
                     result = total.Payload.Value / 1024;
                 } catch (EntityException x) {
@@ -221,41 +221,35 @@ namespace WeaveCore {
             if (wboList != null && wboList.Count > 0) {
                 using (WeaveContext context = new WeaveContext()) {
                     try {
-                        //using (var transaction = new System.Transactions.TransactionScope(System.Transactions.TransactionScopeOption.Required, 
-                        //    new System.Transactions.TransactionOptions { IsolationLevel = System.Transactions.IsolationLevel.ReadCommitted })) {
-                            foreach (WeaveBasicObject wbo in wboList) {
-                                try {
-                                    Wbo modelWbo = wbo.ToModelWbo();
-                                    modelWbo.UserId = UserId;
+                        foreach (WeaveBasicObject wbo in wboList) {
+                            try {
+                                Wbo modelWbo = wbo.ToModelWbo();
+                                modelWbo.UserId = UserId;
 
-                                    var wboToUpdate = (from wbos in context.Wbos
-                                                        where wbos.UserId == UserId &&
-                                                        wbos.Collection == modelWbo.Collection &&
-                                                        wbos.Id == modelWbo.Id
-                                                        select wbos).SingleOrDefault();
+                                var wboToUpdate = (from wbos in context.Wbos
+                                                   where wbos.UserId == UserId &&
+                                                   wbos.Collection == modelWbo.Collection &&
+                                                   wbos.Id == modelWbo.Id
+                                                   select wbos).SingleOrDefault();
 
-                                    if (wboToUpdate == null) {
-                                        context.Wbos.Add(modelWbo);
-                                    } else {
-                                        wboToUpdate.Modified = modelWbo.Modified;
-                                        wboToUpdate.Ttl = modelWbo.Ttl;
-                                        wboToUpdate.SortIndex = modelWbo.SortIndex;
-                                        wboToUpdate.Payload = modelWbo.Payload;
-                                        wboToUpdate.PayloadSize = modelWbo.PayloadSize;
-                                    }
-
-                                    context.SaveChanges();
-                                    resultList.SuccessIds.Add(wbo.Id);
-                                } catch (UpdateException ex) {
-                                    if (wbo.Id != null) {
-                                        resultList.FailedIds[wbo.Id] = new Collection<string> { ex.Message };
-                                    }
+                                if (wboToUpdate == null) {
+                                    context.Wbos.Add(modelWbo);
+                                } else {
+                                    wboToUpdate.Modified = modelWbo.Modified;
+                                    wboToUpdate.Ttl = modelWbo.Ttl;
+                                    wboToUpdate.SortIndex = modelWbo.SortIndex;
+                                    wboToUpdate.Payload = modelWbo.Payload;
+                                    wboToUpdate.PayloadSize = modelWbo.PayloadSize;
+                                }
+                                resultList.SuccessIds.Add(wbo.Id);
+                            } catch (UpdateException ex) {
+                                if (wbo.Id != null) {
+                                    resultList.FailedIds[wbo.Id] = new Collection<string> { ex.Message };
                                 }
                             }
+                        }
 
-                        //    transaction.Complete();
-                        //}
-
+                        context.SaveChanges();
                     } catch (EntityException x) {
                         RaiseLogEvent(this, x.Message, LogType.Error);
                         throw new WeaveException("Database unavailable.", 503);
