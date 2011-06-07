@@ -543,8 +543,8 @@ namespace WeaveCore {
                                         u.UserId,
                                         u.UserName,
                                         Payload = (Double?)g.Sum(p => p.PayloadSize),
-                                        DateMin = (Double?)g.Min(p => p.Modified),
-                                        DateMax = (Double?)g.Max(p => p.Modified)
+                                        DateMin = g.Min(p => p.Modified),
+                                        DateMax = g.Max(p => p.Modified)
                                     }).ToList();
 
                     foreach (var user in userList) {
@@ -668,9 +668,6 @@ namespace WeaveCore {
 
             using (WeaveContext context = new WeaveContext()) {
                 try {
-                    const string sql = "DELETE FROM Wbos WHERE UserID = @userid";
-                    context.Database.ExecuteSqlCommand(sql, new SqlParameter("userid", UserId));
-
                     var user = (from u in context.Users
                                 where u.UserId == userId
                                 select u).SingleOrDefault();
