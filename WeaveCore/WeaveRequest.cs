@@ -142,7 +142,7 @@ namespace WeaveCore {
         }
 
         private void Validate() {
-            if (Version != "0.5" && Version != "1.0") {
+            if (Version != "0.5" && Version != "1.0" && Version != "1.1") {
                 ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
                 ErrorCode = 404;
                 IsValid = false;
