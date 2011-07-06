@@ -68,6 +68,11 @@ namespace WeaveServer.Controllers {
         public ContentResult AddUser(FormCollection form) {
             string user = form["login"];
             string pswd = form["password"];
+            string pswd1 = form["password1"];
+
+            if (pswd != pswd1) {
+                return Content("Passwords do not match.");
+            }
 
             return Content(_weaveAdmin.CreateUser(user, pswd));
         }

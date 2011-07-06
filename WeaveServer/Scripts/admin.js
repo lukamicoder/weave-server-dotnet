@@ -61,13 +61,14 @@ function openDialog(type, value, value2) {
         $('#dialog').dialog("option", "buttons", { "OK": function () { $(this).dialog("close"); } });
     } else if (type == "new") {
         $('#dialog').dialog("option", "title", "Add New User");
-        $('#dialog').dialog("option", "width", 290);
+        $('#dialog').dialog("option", "width", 320);
         $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close"); }, "Submit": function () { addUser(); } });
 
         $('#dialogContent')[0].innerHTML = "";
         $('#dialogContent').append("<div id='error'></div>");
-        $('#dialogContent').append("<p><span>Username:</span><input name='login' id='login' type='text' /></p>");
-        $('#dialogContent').append("<p><span>Password:</span><input name='password' id='password' type='password' /></p>");
+        $('#dialogContent').append("<p><span>Username:</span><input id='login' type='text' class='textbox' /></p>");
+        $('#dialogContent').append("<p><span>Password:</span><input id='password' type='password' class='textbox' /></p>");
+        $('#dialogContent').append("<p><span>Re-type Password:</span><input id='password1' type='password' class='textbox' /></p>");
     } else if (type == "error") {
         $('#dialog').dialog("option", "title", "Error");
         $('#dialog').dialog("option", "width", 'auto');
@@ -137,7 +138,7 @@ function deleteUser(userid) {
 }
 
 function addUser() {
-    var param = [{ name: 'login', value: $('#login')[0].value }, { name: 'password', value: $('#password')[0].value}];
+    var param = [{ name: 'login', value: $('#login')[0].value }, { name: 'password', value: $('#password')[0].value }, { name: 'password1', value: $('#password1')[0].value}];
 
     $.ajax({
         url: "/Admin/AddUser",
