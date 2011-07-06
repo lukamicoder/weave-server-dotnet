@@ -98,7 +98,7 @@
     <Content Include="Global.asax" />
     <Content Include="Scripts\admin.js" />
     <Content Include="Scripts\helper.js" />
-    <Content Include="Scripts\jquery-1.5.2_min.js" />
+    <Content Include="Scripts\jquery-1.6.2_min.js" />
     <Content Include="Scripts\jquery-ui-1.8.11.custom.min.js" />
     <Content Include="Views\Admin\DeleteUser.cshtml" />
     <Content Include="Views\Admin\Index.cshtml" />
