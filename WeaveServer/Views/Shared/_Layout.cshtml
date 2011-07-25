@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-    <title>Weave Server Administration</title>
+    <title>Weave Server.NET</title>
     <link rel="shortcut icon" href="@Url.Content("favicon.ico")" type="image/x-icon" />
     <link href="@Url.Content("~/Content/Site.css")" rel="stylesheet" type="text/css" />
     <script src="@Url.Content("~/Scripts/jquery-1.6.2_min.js")" type="text/javascript"></script>
@@ -12,14 +12,17 @@
     <div id="wrapper">
         <div id="header">
             <div id="logo">Weave Server.NET</div>
-            <div id="logout">
             @if (HttpContext.Current.User.Identity.IsAuthenticated) {
-                @Html.ActionLink("Logout", "Logout", "Admin")
-            }               
-            </div>
+                <div id="logout">
+                    You are logged in as <b>@Context.User.Identity.Name</b>.&nbsp;&nbsp;@Html.ActionLink("Logout", "Logout")
+                </div>
+            } 
         </div>
         <div id="content">
             @RenderBody()
+            <div id="dialog">
+                <div id="dialogContent"></div>
+            </div>
         </div>
     </div>
 </body>

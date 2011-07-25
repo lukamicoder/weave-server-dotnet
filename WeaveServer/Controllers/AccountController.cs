@@ -26,34 +26,44 @@ using WeaveCore;
 using WeaveServer.Services;
 
 namespace WeaveServer.Controllers {
-    public class AdminController : Controller {
+    public class AccountController : Controller {
         WeaveAdmin _weaveAdmin = new WeaveAdmin();
 
-        public AdminController() {
+        public AccountController() {
             _weaveAdmin.LogEvent += OnLogEvent;
+        }
+
+        private Int32 GetUserId() {
+            int userId = 0;
+            if (Request != null && Request.IsAuthenticated) {
+                FormsIdentity id = (FormsIdentity) HttpContext.User.Identity;
+                FormsAuthenticationTicket ticket = id.Ticket;
+
+                Int32.TryParse(ticket.UserData, out userId);
+            }
+
+            return userId;
         }
 
         public ActionResult Index(FormCollection form) {
             if (form.Count == 0) {
                 if (Request.IsAuthenticated) {
-                    FormsIdentity id = (FormsIdentity)HttpContext.User.Identity;
-                    FormsAuthenticationTicket ticket = id.Ticket;
+                    return GetUserId() > 0 ? View() : Logout();
+                }
 
-                    return ticket.UserData == "Admin" ? View() : Logout();
-                } 
-                
-                return View("Login");  
+                return View("Login"); 
             }
 
             string user = form["login"];
             string pswd = form["password"];
-            if (FormsAuthentication.Authenticate(user, pswd)) {
-                FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, "Admin");
+            int userId = _weaveAdmin.AuthenticateUser(user, pswd);
+            if (userId > 0) {
+                FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, userId + "");
                 string cookieStr = FormsAuthentication.Encrypt(ticket);
                 HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr) { Path = FormsAuthentication.FormsCookiePath };
                 Response.Cookies.Add(cookie);
 
-                return RedirectToAction("Index", "Admin");
+                return RedirectToAction("Index", "Account");
             }
 
             ViewBag.ErrorMessage = "Incorrect username and/or password.";
@@ -61,38 +71,45 @@ namespace WeaveServer.Controllers {
 
             return View("Login");
         }
-        
+
         [HttpPost]
-        public ContentResult GetUserList() {
-            return Content(_weaveAdmin.GetUserList());
+        public ContentResult GetUserSummary() {
+            string output = _weaveAdmin.GetUserSummary(GetUserId());
+
+            return Content(output);
         }
 
         [HttpPost]
-        public ContentResult GetUserDetails(int userId) {
-            return Content(_weaveAdmin.GetUserDetails(userId));
+        public ContentResult GetUserDetails() {
+            string output = _weaveAdmin.GetUserDetails(GetUserId());
+
+            return Content(output);
         }
 
         [HttpPost]
-        public ContentResult AddUser(FormCollection form) {
-            string user = form["login"];
-            string pswd = form["password"];
-            string pswd1 = form["password1"];
+        public ContentResult ChangePassword(string password) {
+            string output = _weaveAdmin.ChangePassword(GetUserId(), password);
 
-            if (pswd != pswd1) {
-                return Content("Passwords do not match.");
-            }
-
-            return Content(_weaveAdmin.CreateUser(user, pswd));
+            return Content(output);
         }
 
         [HttpPost]
-        public ContentResult DeleteUser(int userId) {
-            return Content(_weaveAdmin.DeleteUser(userId));
+        public ContentResult ClearUserData() {
+            string output = _weaveAdmin.ClearUserData(GetUserId());
+
+            return Content(output);
+        }
+
+        [HttpPost]
+        public ContentResult DeleteUser() {
+            string output = _weaveAdmin.DeleteUser(GetUserId());
+
+            return Content(output);
         }
 
         public ActionResult Logout() {
             FormsAuthentication.SignOut();
-            return RedirectToAction("Index", "Admin");
+            return RedirectToAction("Index", "Account");
         }
 
         public ActionResult PageNotFound() {

@@ -29,12 +29,11 @@ $(document).ready(function () {
 
     if ("undefined" == typeof (userTable)) {
         columns = [];
-        columns[1] = ["User", "tdUser", "tdUser"];
-        columns[2] = ["Payload", "tdLoad", "tdLoad"];
-        columns[3] = ["First Sync", "tdDate", "tdDate"];
-        columns[4] = ["Last Sync", "tdDate", "tdDate"];
+        columns[1] = ["Payload", "tdLoad", "tdLoad"];
+        columns[2] = ["First Sync", "tdDate", "tdDate"];
+        columns[3] = ["Last Sync", "tdDate", "tdDate"];
+        columns[4] = ["&nbsp;", "", "tdLink"];
         columns[5] = ["&nbsp;", "", "tdLink"];
-        columns[6] = ["&nbsp;", "", "tdLink"];
         userTable = new JSONTable('tableContainer', 'userTable', columns);
     }
 
@@ -49,55 +48,61 @@ $(document).ready(function () {
     loadUserTable();
 });
 
-function openDialog(type, value, value2) {
+function openDialog(type) {
     $('#dialogContent')[0].style.color = '';
-
-    switch (type) {
+    switch(type) {
         case "del":
-            $('#dialog').dialog("option", "title", "Delete User");
-            $('#dialog').dialog("option", "width", 300);
-            $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close"); }, "Delete": function () { deleteUser(value); } });
+            $('#dialog').dialog("option", "title", "Delete Account");
+            $('#dialog').dialog("option", "width", 340);
+            $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close"); }, "Delete": function () { deleteUser(); } });
 
-            $('#dialogContent')[0].innerHTML = "Are you sure you want to delete " + value2 + "?";
+            $('#dialogContent')[0].innerHTML = "Are you sure you want to delete your account?<br />This cannot be undone.";
             break;
         case "details":
-            $('#dialog').dialog("option", "title", "User Details - " + value2);
+            $('#dialog').dialog("option", "title", "Account Details");
             $('#dialog').dialog("option", "width", 250);
             $('#dialog').dialog("option", "buttons", { "OK": function () { $(this).dialog("close"); } });
             break;
-        case "new":
-            $('#dialog').dialog("option", "title", "Add New User");
+        case "clear":
+            $('#dialog').dialog("option", "title", "Clear Sync Data");
             $('#dialog').dialog("option", "width", 340);
-            $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close"); }, "Submit": function () { addUser(); } });
+            $('#dialog').dialog("option", "buttons", { "Cancel": function () { loadUserTable(); $(this).dialog("close"); }, "Clear": function () { clearUserData(); } });
+
+            $('#dialogContent')[0].innerHTML = "Are you sure you want to clear your sync data?<br />This cannot be undone.";
+            break;
+        case "pass":
+            $('#dialog').dialog("option", "title", "Change Password");
+            $('#dialog').dialog("option", "width", 360);
+            $('#dialog').dialog("option", "buttons", { "Cancel": function () { $(this).dialog("close"); }, "Submit": function () { changePassword(); } });
 
             $('#dialogContent')[0].innerHTML = "";
             $('#dialogContent').append("<div id='error'></div>");
-            $('#dialogContent').append("<p><span>Username:</span><input id='login' type='text' class='textbox' /></p>");
-            $('#dialogContent').append("<p><span>Password:</span><input id='password' type='password' class='textbox' /></p>");
-            $('#dialogContent').append("<p><span>Re-type Password:</span><input id='password1' type='password' class='textbox' /></p>");
+            $('#dialogContent').append("<p><span class='longspan'>New Password:</span><input id='password' type='password' class='textbox' /></p>");
+            $('#dialogContent').append("<p><span class='longspan'>Re-type New Password:</span><input id='password1' type='password' class='textbox' /></p>");
             break;
-        case "error":
-            $('#dialog').dialog("option", "title", "Error");
-            $('#dialog').dialog("option", "width", 'auto');
-            $('#dialog').dialog("option", "buttons", { "OK": function () { $(this).dialog("close"); } });
-
-            $('#dialogContent')[0].style.color = 'Red';
-            $('#dialogContent')[0].innerHTML = value;
-            break;
-        default:
+        default:   
             return;
     }
 
     $('#dialog').dialog("open");
 }
 
-function showDetails(userid, username) {
-    var param = [{ name: 'userId', value: userid}];
+function openErrorDialog(text) {
+    $('#dialog').dialog("option", "title", "Error");
+    $('#dialog').dialog("option", "width", 'auto');
+    $('#dialog').dialog("option", "buttons", { "OK": function () { $(this).dialog("close"); } });
 
+    $('#dialogContent')[0].innerHTML = "";
+    $('#dialogContent')[0].style.color = 'Red';
+    $('#dialogContent')[0].innerHTML = text;
+
+    $('#dialog').dialog("open");
+}
+
+function showDetails() {
     $.ajax({
-        url: "/Admin/GetUserDetails",
+        url: "/Account/GetUserDetails",
         cache: false,
-        data: param,
         type: 'POST',
         dataType: 'json',
         success: function (data) {
@@ -117,57 +122,75 @@ function showDetails(userid, username) {
 
             $('#dialogContent')[0].innerHTML = "";
             detailsTable.loadData(rows);
-            openDialog('details', userid, username);
+            openDialog('details');
         },
         error: function (data) {
-            openDialog("error", data.responseText);
+            openErrorDialog(data.responseText);
         }
     });
 }
 
-function deleteUser(userid) {
-    var param = [{ name: 'userid', value: userid}];
+function changePassword() {
+    var pass = $('#password')[0].value;
+    var pass1 = $('#password1')[0].value;
+    if (pass == '' && pass1 == '') {
+        return;
+    } else if (pass != pass1) {
+        $('#error')[0].style.display = "block";
+        $('#error')[0].innerHTML = "Passwords do not match.";
+        return;
+    }
 
     $.ajax({
-        url: "/Admin/DeleteUser",
+        url: "/Account/ChangePassword",
         cache: false,
-        data: param,
+        data: [{ name: 'password', value: pass}],
+        type: 'POST',
+        dataType: 'json',
+        success: function (data) {
+            $('#dialog').dialog("close");
+        },
+        error: function (data) {
+            openErrorDialog(data.responseText);
+        }
+    });
+}
+
+function deleteUser() {
+    $.ajax({
+        url: "/Account/DeleteUser",
+        cache: false,
+        type: 'POST',
+        dataType: 'json',
+        success: function (data) {
+            $('#dialog').dialog("close");
+            window.location = '/Account/Logout';
+        },
+        error: function (data) {
+            openErrorDialog(data.responseText);
+        }
+    });
+}
+
+function clearUserData() {
+    $.ajax({
+        url: "/Account/ClearUserData",
+        cache: false,
         type: 'POST',
         dataType: 'json',
         success: function (data) {
             loadUserTable();
             $('#dialog').dialog("close");
-            user = null;
         },
         error: function (data) {
-            openDialog("error", data.responseText);
-        }
-    });
-}
-
-function addUser() {
-    var param = [{ name: 'login', value: $('#login')[0].value }, { name: 'password', value: $('#password')[0].value }, { name: 'password1', value: $('#password1')[0].value}];
-
-    $.ajax({
-        url: "/Admin/AddUser",
-        cache: false,
-        data: param,
-        type: 'POST',
-        dataType: 'json',
-        success: function (data) {
-            loadUserTable();
-            $('#dialog').dialog("close");
-        },
-        error: function (data) {
-            $('#error')[0].style.display = "block";
-            $('#error')[0].innerHTML = data.responseText;
+            openErrorDialog(data.responseText);
         }
     });
 }
 
 function loadUserTable() {
     $.ajax({
-        url: "/Admin/GetUserList",
+        url: "/Account/GetUserSummary",
         cache: false,
         type: 'POST',
         dataType: 'json',
@@ -175,12 +198,11 @@ function loadUserTable() {
             var rows = new Array();
             if (users !== undefined) {
                 if (users.length == 0) {
-                    row = ["&nbsp;", "", "", "", "", ""];
+                    row = ["&nbsp;", "", "", "", ""];
                     rows.push(row);
                 } else {
                     for (var i = 0; i < users.length; i++) {
                         if (users[i] !== null) {
-                            var username = users[i].UserName;
                             var id = users[i].UserId;
                             var size = users[i].Payload;
 
@@ -196,20 +218,23 @@ function loadUserTable() {
                                 datemax = datemax.format();
                             }
 
-                            var detail = "";
+                            var detail = ""; ;
                             if (datemax !== "") {
                                 detail = document.createElement("a");
-                                $(detail).attr('href', "javascript:showDetails('" + id + "', '" + username + "');");
+                                $(detail).attr('href', "javascript:showDetails()");
                                 $(detail).append(document.createTextNode('details'));
                             }
 
-                            var del = document.createElement("a");
-                            $(del).attr('href', "javascript:openDialog('del', '" + id + "', '" + username + "');");
-                            $(del).append(document.createTextNode('delete'));
+                            var clear = "&nbsp;";
+                            if (datemax !== "") {
+                                clear = document.createElement("a");
+                                $(clear).attr('href', "javascript:openDialog('clear');");
+                                $(clear).append(document.createTextNode('clear'));
+                            }
 
-                            row = [username, size, datemin, datemax, detail, del];
+                            row = [size, datemin, datemax, detail, clear];
                         } else {
-                            var row = ["&nbsp;", "", "", "", "", ""];
+                            var row = ["&nbsp;", "", "", "", ""];
                         }
 
                         rows.push(row);
@@ -220,7 +245,7 @@ function loadUserTable() {
             userTable.loadData(rows);
         },
         error: function (data) {
-            openDialog("error", data.responseText);
+            openErrorDialog(data.responseText);
         }
     });
 }

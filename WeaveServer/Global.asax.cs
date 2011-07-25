@@ -20,15 +20,9 @@ namespace WeaveServer {
             );
 
             routes.MapRoute(
-                "DeleteUser",
-                "DeleteUser",
-                new { controller = "Admin", action = "DeleteUser" }
-            );
-
-            routes.MapRoute(
-                "Cleanup",
-                "Cleanup",
-                new { controller = "Admin", action = "Cleanup" }
+                "Account",
+                "Account/{action}",
+                new { controller = "Account", action = "Index" }
             );
 
             routes.MapRoute(

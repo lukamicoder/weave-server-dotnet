@@ -24,21 +24,16 @@ using System.Web.Script.Serialization;
 namespace WeaveCore {
     public class WeaveAdmin : WeaveLogEventBase {
         JavaScriptSerializer _jss;
-        WeaveStorage _db;
+        WeaveAdminStorage _db;
 
         public WeaveAdmin() {
             _jss = new JavaScriptSerializer();
-            _db = new WeaveStorage();
+            _db = new WeaveAdminStorage();
             _db.LogEvent += OnLogEvent;
         }
 
-        public string GetUserDetails(Int32 userId) {
-            try {
-                var list = _db.GetUserDetails(userId);
-                return _jss.Serialize(list);
-            } catch (WeaveException ex) {
-                return String.Format("Error: {0}", ex.Message);
-            }
+        public Int32 AuthenticateUser(string userName, string password) {
+            return _db.AuthenticateUser(userName, password);
         }
 
         public string GetUserList() {
@@ -50,20 +45,29 @@ namespace WeaveCore {
             }
         }
 
-        public string DeleteUser(Int32 userId) {
-            string msg = "";
-            if (!_db.DeleteUser(userId)) {
-                msg = "There was an error on deleting user.";
+        public string GetUserSummary(Int32 userId) {
+            try {
+                var list = _db.GetUserSummary(userId);
+                return _jss.Serialize(list);
+            } catch (WeaveException ex) {
+                return String.Format("Error: {0}", ex.Message);
             }
+        }
 
-            return msg;
+        public string GetUserDetails(Int32 userId) {
+            try {
+                var list = _db.GetUserDetails(userId);
+                return _jss.Serialize(list);
+            } catch (WeaveException ex) {
+                return String.Format("Error: {0}", ex.Message);
+            }
         }
 
         public string CreateUser(string userName, string password) {
             string msg = "";
             if (String.IsNullOrEmpty(userName) && String.IsNullOrEmpty(password)) {
                 msg = "Username and password cannot be blank.";
-            } else if (!WeaveValidation.IsUserNameValid(userName)) {
+            } else if (!WeaveHelper.IsUserNameValid(userName)) {
                 msg = "Username can only consist of characters (A-Z or a-z), numbers (0-9), and these special characters: _ -.";
             } else if (!_db.IsUniqueUserName(userName)) {
                 msg = "Username already exists.";
@@ -74,14 +78,33 @@ namespace WeaveCore {
             return msg;
         }
 
-        public Int32 AuthenticateUser(string userName, string password) {
-            try {
-                if (_db.AuthenticateUser(userName, password)) {
-                    return _db.UserId;
-                }
-            } catch (WeaveException) { }
+        public string DeleteUser(Int32 userId) {
+            string msg = "";
+            if (!_db.DeleteUser(userId)) {
+                msg = "There was an error on deleting user.";
+            }
 
-            return 0;
+            return msg;
+        }
+
+        public string ChangePassword(Int32 userId, string password) {
+            try {
+                _db.ChangePassword(userId, password);
+            } catch (WeaveException ex) {
+                return String.Format("Error: {0}", ex.Message);
+            }
+
+            return "";
+        }
+
+        public string ClearUserData(Int32 userId) {
+            try {
+                _db.ClearUserData(userId);
+            } catch (WeaveException ex) {
+                return String.Format("Error: {0}", ex.Message);
+            }
+
+            return "";
         }
     }
 }

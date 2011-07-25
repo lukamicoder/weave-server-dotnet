@@ -123,7 +123,6 @@ namespace WeaveCore {
 
         private void RequestGetStorage() {
             IList<WeaveBasicObject> wboList;
-            string full;
             string formatType = "json";
 
             if (_req.Id != null) {
@@ -141,7 +140,7 @@ namespace WeaveCore {
                     return;
                 }
             } else {
-                full = _req.QueryString["full"];
+                string full = _req.QueryString["full"];
                 string accept = _req.ServerVariables["HTTP_ACCEPT"];
                 if (accept != null) {
                     if (accept.Contains("application/whoisi")) {
@@ -156,7 +155,7 @@ namespace WeaveCore {
                 }
 
                 try {
-                    wboList = _db.RetrieveWboList(_req.Collection, null, full == "1" ? true : false,
+                    wboList = _db.RetrieveWboList(_req.Collection, null, full == "1",
                                                     _req.QueryString["newer"],
                                                     _req.QueryString["older"],
                                                     _req.QueryString["sort"],
@@ -268,7 +267,8 @@ namespace WeaveCore {
         private void RequestPost() {
             if (_req.Function == "password") {
                 try {
-                    _db.ChangePassword(_req.Content);
+                    WeaveAdminStorage adbo = new WeaveAdminStorage();
+                    adbo.ChangePassword(_db.UserId, _req.Content);
                 } catch (WeaveException e) {
                     Response = ReportProblem(e.Message, e.Code);
                     return;
@@ -384,7 +384,8 @@ namespace WeaveCore {
                     return;
                 }
 
-                _db.DeleteUser(_db.UserId);
+                WeaveAdminStorage adbo = new WeaveAdminStorage();
+                adbo.DeleteUser(_db.UserId);
             }
         }
 

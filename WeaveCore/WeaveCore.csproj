@@ -58,6 +58,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="WeaveAdminStorage.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\Wbo.cs" />
     <Compile Include="Models\WeaveContext.cs" />
@@ -74,7 +75,7 @@
     <Compile Include="WeaveRequest.cs" />
     <Compile Include="WeaveResultList.cs" />
     <Compile Include="WeaveStorage.cs" />
-    <Compile Include="WeaveValidation.cs" />
+    <Compile Include="WeaveHelper.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

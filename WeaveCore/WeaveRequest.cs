@@ -146,7 +146,7 @@ namespace WeaveCore {
                 ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
                 ErrorCode = 404;
                 IsValid = false;
-            } else if (!WeaveValidation.IsUserNameValid(UserName)) {
+            } else if (!WeaveHelper.IsUserNameValid(UserName)) {
                 ErrorMessage = WeaveErrorCodes.InvalidUsername;
                 ErrorCode = 400;
                 IsValid = false;
@@ -162,7 +162,7 @@ namespace WeaveCore {
                 ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 ErrorCode = 400;
                 IsValid = false;
-            } else if (RequestMethod != "DELETE" && Function != "password" && !WeaveValidation.IsUserNameValid(Collection)) {
+            } else if (RequestMethod != "DELETE" && Function != "password" && !WeaveHelper.IsUserNameValid(Collection)) {
                 ErrorMessage = WeaveErrorCodes.InvalidCollection;
                 ErrorCode = 400;
                 IsValid = false;

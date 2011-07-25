@@ -3,11 +3,12 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 #wrapper { width: 600px; margin: 10px auto; }
 #header { float: left; width: 610px; margin-bottom: 10px; }
 #logo { float: left; font-size: 24px; color: #f26522; letter-spacing: -1px; }
-#logout a { float: right; padding-top: 7px; margin-right: -25px; font-weight: bold; font-size: smaller; color: #ffffff; }
-
+#logout  { float: right; padding-top: 7px; margin-right: -25px; font-size: smaller; color: #ffffff; }
+#logout a { color: #ffffff; font-weight: bold; }
 #content { float: left; width: 600px; padding: 15px 20px 20px 20px; background-color: #ececec; border-top: 5px solid #f26522; border-bottom: 10px solid #3c3c3c; }
 
-.addnew { float: left; font-weight: bold; padding-bottom: 20px; color: #000000; }
+.link { font-weight: bold; color: #000000; }
+.linkdiv { float: right; padding-bottom: 20px; padding-left: 30px; }
 
 .notfound { font-size: medium; font-weight: bold; padding-top: 20px; padding-bottom: 20px; text-align: center; }
 
@@ -33,6 +34,7 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 
 #dialogContent #error { color: Red; padding-bottom: 5px; text-align: center; font-size: smaller; display: none; }
 #dialogContent span { display: inline-block; width: 130px; text-align: left; padding: 5px; }
+#dialogContent .longspan { width: 160px; }
 #dialogContent .textbox { position: relative; padding: 2px; width: 135px; }
 
 
@@ -48,8 +50,8 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 
 .ui-dialog { position: absolute; padding: .2em; width: 300px; overflow: hidden; }
 .ui-dialog .ui-dialog-titlebar { padding: .3em .6em; position: relative; }
-.ui-dialog .ui-dialog-content { border: 0; overflow: auto; text-align: center; padding: 10px; }
-.ui-dialog .ui-dialog-content p { margin: 3px; }
+.ui-dialog .ui-dialog-content { border: 0; overflow: auto; text-align: center; padding: 20px; }
+.ui-dialog .ui-dialog-content p { margin: 3px }
 .ui-dialog .ui-dialog-buttonpane { border-width: 1px 0 0 0; }
 .ui-dialog .ui-dialog-buttonpane button { float: right; margin: .4em .3em .4em 0; cursor: pointer; padding: 2px; width: 70px; overflow: visible; }
 .ui-draggable .ui-dialog-titlebar { cursor: move; }

@@ -18,18 +18,32 @@
  * Boston, MA 02111-1307, USA.
  */
 
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace WeaveCore {
-    static class WeaveValidation {
-        static Regex _regex = new Regex(@"[^a-zA-Z0-9._-]");
-
+    static class WeaveHelper {
         public static bool IsUserNameValid(string text) {
+            Regex regex = new Regex(@"[^a-zA-Z0-9._-]");
+            
             if (string.IsNullOrEmpty(text) || text.Length > 32) {
                 return false;
             }
 
-            return !_regex.IsMatch(text);
+            return !regex.IsMatch(text);
+        }
+
+        public static string ConvertToHash(string value) {
+            StringBuilder sb = new StringBuilder();
+            using (MD5CryptoServiceProvider serviceProvider = new MD5CryptoServiceProvider()) {
+                byte[] data = serviceProvider.ComputeHash(Encoding.ASCII.GetBytes(value));
+                for (int i = 0; i < data.Length; i++) {
+                    sb.Append(data[i].ToString("x2"));
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }
