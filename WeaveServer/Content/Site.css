@@ -35,7 +35,7 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 #dialogContent #error { color: Red; padding-bottom: 5px; text-align: center; font-size: smaller; display: none; }
 #dialogContent span { display: inline-block; width: 130px; text-align: left; padding: 5px; }
 #dialogContent .longspan { width: 160px; }
-#dialogContent .textbox { position: relative; padding: 2px; width: 135px; }
+#dialogContent .textbox { position: relative; padding: 2px; width: 125px; }
 
 
 /*
