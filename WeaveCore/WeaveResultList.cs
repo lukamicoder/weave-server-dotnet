@@ -56,8 +56,8 @@ namespace WeaveCore {
 
         public string ToJson() {
             _result.Add("modified", _modified);
-            _result.Add("success", _successIds);
-            _result.Add("failed", _failedIds);
+            _result.Add("success", SuccessIds);
+            _result.Add("failed", FailedIds);
             return _jss.Serialize(_result);
         }
     }
