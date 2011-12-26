@@ -28,7 +28,7 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 .JSONTable .evenRow { background: #ddd; }
 .JSONTable .oddRow { background: #fff; }
 .JSONTable .tdUser { width: 80px; padding-left: 5px; text-align: left; }
-.JSONTable .tdDate { width: 105px; padding-left: 5px; text-align: left; }
+.JSONTable .tdDate { width: 110px; padding-left: 5px; text-align: left; }
 .JSONTable .tdLoad { width: 40px; padding-left: 5px; text-align: center; }
 .JSONTable .tdLink { width: 40px; color: #666666; text-align: center; }
 

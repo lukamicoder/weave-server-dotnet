@@ -100,7 +100,7 @@
     <Content Include="Scripts\account.js" />
     <Content Include="Scripts\admin.js" />
     <Content Include="Scripts\helper.js" />
-    <Content Include="Scripts\jquery-1.6.4_min.js" />
+    <Content Include="Scripts\jquery-1.7.1_min.js" />
     <Content Include="Scripts\jquery-ui-1.8.16.custom.min.js" />
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Shared\PageNotFound.cshtml" />
