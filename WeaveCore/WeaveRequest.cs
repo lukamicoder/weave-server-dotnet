@@ -30,13 +30,16 @@ namespace WeaveCore {
         private string _loginName;
         public string Password { get; private set; }
 
+        public string Url { get; private set; }
+
         public string Version { get; private set; }
         public string UserName { get; private set; }
-        public string Function { get; private set; }
+        public string PathName { get; private set; }
+        public RequestFunction Function { get; private set; }
         public string Id { get; private set; }
         public string Collection { get; private set; }
 
-        public string RequestMethod { get; private set; }
+        public RequestMethod RequestMethod { get; private set; }
         public NameValueCollection ServerVariables { get; private set; }
         public NameValueCollection QueryString { get; private set; }
         public double? HttpX { get; private set; }
@@ -45,24 +48,31 @@ namespace WeaveCore {
         public WeaveErrorCodes ErrorMessage { get; private set; }
         public int ErrorCode { get; private set; }
 
-        public WeaveRequest(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {
-            if (serverVariables == null || serverVariables.Count == 0 || String.IsNullOrEmpty(rawUrl)) {
+        public WeaveRequest(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
+            if (serverVariables == null || serverVariables.Count == 0 || String.IsNullOrEmpty(url.AbsolutePath)) {
                 IsValid = false;
                 return;
             }
+
+            string baseUrl = "";
+            baseUrl = url.AbsoluteUri;
+            if (url.AbsolutePath.Length > 1) {
+                baseUrl = baseUrl.Substring(0, baseUrl.IndexOf(url.AbsolutePath) + 1);
+            }
+            Url = baseUrl;
 
             TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
             RequestTime = Math.Round(ts.TotalSeconds, 2); 
 
             ServerVariables = serverVariables;
             QueryString = queryString;
-            RequestMethod = ServerVariables["REQUEST_METHOD"];
+            RequestMethod = (RequestMethod)Enum.Parse(typeof(RequestMethod), ServerVariables["REQUEST_METHOD"]);
 
-            GetAuthenticationInfo(ServerVariables["HTTP_AUTHORIZATION"]);    
-      
-            ProcessUrl(rawUrl);
+            GetAuthenticationInfo(ServerVariables["HTTP_AUTHORIZATION"]);
 
-            if ((RequestMethod == "POST" || RequestMethod == "PUT") && inputStream != null && inputStream.Length != 0) {
+            ProcessUrl(url.AbsolutePath);
+
+            if ((RequestMethod == RequestMethod.POST || RequestMethod == RequestMethod.PUT) && inputStream != null && inputStream.Length != 0) {
                 GetContent(inputStream);
             }
 
@@ -80,34 +90,39 @@ namespace WeaveCore {
             if (end > -1) {
                 rawUrl = rawUrl.Substring(0, end);
             }
-            string[] path = rawUrl.Split(new[] { '/' });
+            if (rawUrl.StartsWith("/")) {
+                rawUrl = rawUrl.Substring(1, rawUrl.Length - 1);
+            }
 
-            switch (path.Length) {
-                case 6:
-                    Version = path[path.Length - 5];
-                    UserName = path[path.Length - 4];
-                    Function = path[path.Length - 3];
-                    Collection = path[path.Length - 2];
-                    Id = path[path.Length - 1];
-                    IsValid = true;
-                    break;
-                case 5:
-                    if (path[1] == "user") {
-                        Version = path[path.Length - 3];
-                        UserName = path[path.Length - 2];
-                        Function = path[path.Length - 1];
-                    } else {
-                        Version = path[path.Length - 4];
-                        UserName = path[path.Length - 3];
-                        Function = path[path.Length - 2];
-                        Collection = path[path.Length - 1];
-                    }
-                    IsValid = true;
-                    break;
-                default:
-                    IsValid = false;
-                    return;
-            }         
+            string[] path = rawUrl.Split(new[] { '/' });
+            
+            if (path.Length < 3 || path.Length > 6) {
+                IsValid = false;
+                return;
+            }
+
+            int offset = 0;
+            if (path[0] == "user") {
+                PathName = path[0];
+            } else {
+                offset = -1;
+            }
+
+            Version = path[1 + offset];
+            UserName = path[2 + offset];
+
+            if (path.Length > 3 + offset) {
+                RequestFunction requestFunction;
+                Function = Enum.TryParse(path[3 + offset], true, out requestFunction) ? requestFunction : RequestFunction.NotSupported;
+            }
+            if (path.Length > 4 + offset) {
+                Collection = path[4 + offset];
+            }
+            if (path.Length > 5 + offset) {
+                Id = path[5 + offset];
+            }
+
+            IsValid = true;
         }
 
         private void GetAuthenticationInfo(string authHeader) {
@@ -142,31 +157,27 @@ namespace WeaveCore {
         }
 
         private void Validate() {
-            if (Version != "0.5" && Version != "1.0" && Version != "1.1") {
+            if (Version != "1.0" && Version != "1.1") {
                 ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
                 ErrorCode = 404;
                 IsValid = false;
-            } else if (!WeaveHelper.IsUserNameValid(UserName)) {
-                ErrorMessage = WeaveErrorCodes.InvalidUsername;
-                ErrorCode = 400;
-                IsValid = false;
-            } else if (Function != "info" && Function != "storage" && Function != "password") {
+            } else if (Function == RequestFunction.NotSupported) {
                 ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
                 ErrorCode = 400;
                 IsValid = false;
-            } else if (Function == "password" && RequestMethod != "POST") {
+            } else if (Function == RequestFunction.Password && RequestMethod != RequestMethod.POST) {
                 ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 ErrorCode = 400;
                 IsValid = false;
-            } else if (Function == "info" && RequestMethod != "GET") {
+            } else if (Function == RequestFunction.Info && RequestMethod != RequestMethod.GET) {
                 ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 ErrorCode = 400;
                 IsValid = false;
-            } else if (RequestMethod != "DELETE" && Function != "password" && !WeaveHelper.IsUserNameValid(Collection)) {
+            } else if (RequestMethod != RequestMethod.DELETE && Function != RequestFunction.Password && !WeaveHelper.IsUserNameValid(Collection)) {
                 ErrorMessage = WeaveErrorCodes.InvalidCollection;
                 ErrorCode = 400;
                 IsValid = false;
-            } else if ((RequestMethod == "POST" || RequestMethod == "PUT") && String.IsNullOrEmpty(Content)) {
+            } else if ((RequestMethod == RequestMethod.POST || RequestMethod == RequestMethod.PUT) && String.IsNullOrEmpty(Content)) {
                 ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 ErrorCode = 400;
                 IsValid = false;

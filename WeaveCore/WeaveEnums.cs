@@ -19,6 +19,10 @@
  */
 
 namespace WeaveCore {
+    public enum RequestMethod { GET, PUT, POST, DELETE }
+
+    public enum RequestFunction { NotSupported, Info, Storage, Node, Password }
+
     public enum WeaveErrorCodes {
         InvalidProtocol = 1,
         IncorrectCaptcha = 2,

@@ -27,7 +27,7 @@ using WeaveServer.Services;
 namespace WeaveServer.Controllers {
     public class WeaveController : Controller {
         public ContentResult Index() {
-            Weave weave = new Weave(Request.ServerVariables, Request.QueryString, Request.RawUrl, Request.InputStream);
+            Weave weave = new Weave(Request.Url, Request.ServerVariables, Request.QueryString, Request.InputStream);
 
             weave.LogEvent += OnLogEvent;
 

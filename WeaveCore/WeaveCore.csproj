@@ -68,7 +68,7 @@
     <Compile Include="Weave.cs" />
     <Compile Include="WeaveAdmin.cs" />
     <Compile Include="WeaveBasicObject.cs" />
-    <Compile Include="WeaveErrorCodes.cs" />
+    <Compile Include="WeaveEnums.cs" />
     <Compile Include="WeaveException.cs" />
     <Compile Include="WeaveLogEventArgs.cs" />
     <Compile Include="WeaveLogEventBase.cs" />

@@ -37,14 +37,12 @@ namespace WeaveCore {
         public int ErrorStatusCode { get; private set; }
         public string Response { get; private set; }
 
-        public Weave(NameValueCollection serverVariables, NameValueCollection queryString, string rawUrl, Stream inputStream) {
-            _req = new WeaveRequest(serverVariables, queryString, rawUrl, inputStream);
+        public Weave(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
+            _req = new WeaveRequest(url, serverVariables, queryString, inputStream);
 
             _jss = new JavaScriptSerializer();
 
-            Headers = new Dictionary<string, string>();
-            Headers.Add("Content-type", "application/json");
-            Headers.Add("X-Weave-Timestamp", _req.RequestTime + "");
+            Headers = new Dictionary<string, string> { { "Content-type", "application/json" }, { "X-Weave-Timestamp", _req.RequestTime + "" } };
 
             if (!_req.IsValid) {
                 if (_req.ErrorMessage != 0) {
@@ -68,26 +66,29 @@ namespace WeaveCore {
             }
 
             switch (_req.RequestMethod) {
-                case "GET":
+                case RequestMethod.GET:
                     switch (_req.Function) {
-                        case "info":
+                        case RequestFunction.Info:
                             RequestGetInfo();
                             break;
-                        case "storage":
+                        case RequestFunction.Storage:
                             RequestGetStorage();
+                            break;
+                        case RequestFunction.Node:
+                            Response = _req.Url;
                             break;
                         default:
                             Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
                             break;
                     }
                     break;
-                case "PUT":
+                case RequestMethod.PUT:
                     RequestPut();
                     break;
-                case "POST":
+                case RequestMethod.POST:
                     RequestPost();
                     break;
-                case "DELETE":
+                case RequestMethod.DELETE:
                     RequestDelete();
                     break;
                 default:
@@ -265,7 +266,7 @@ namespace WeaveCore {
         }
 
         private void RequestPost() {
-            if (_req.Function == "password") {
+            if (_req.Function == RequestFunction.Password) {
                 try {
                     WeaveAdminStorage adbo = new WeaveAdminStorage();
                     adbo.ChangePassword(_db.UserId, _req.Content);
@@ -283,7 +284,6 @@ namespace WeaveCore {
                 return;
             }
 
-            WeaveBasicObject wbo;
             var resultList = new WeaveResultList(_req.RequestTime);
             var wboList = new Collection<WeaveBasicObject>();
 
@@ -303,7 +303,7 @@ namespace WeaveCore {
             }
 
             foreach (object objItem in objArray) {
-                wbo = new WeaveBasicObject();
+                WeaveBasicObject wbo = new WeaveBasicObject();
                 Dictionary<string, object> dic;
 
                 try {
@@ -381,11 +381,7 @@ namespace WeaveCore {
             } else {
                 if (_req.ServerVariables["HTTP_X_CONFIRM_DELETE"] == null) {
                     ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
-                    return;
                 }
-
-                WeaveAdminStorage adbo = new WeaveAdminStorage();
-                adbo.DeleteUser(_db.UserId);
             }
         }
 
