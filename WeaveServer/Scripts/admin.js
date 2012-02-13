@@ -61,7 +61,7 @@ function openDialog(type, value, value2) {
             $('#dialogContent')[0].innerHTML = "Are you sure you want to delete " + value2 + "?";
             break;
         case "details":
-            $('#dialog').dialog("option", "title", "User Details - " + value2);
+            $('#dialog').dialog("option", "title", value2);
             $('#dialog').dialog("option", "width", 250);
             $('#dialog').dialog("option", "buttons", { "OK": function () { $(this).dialog("close"); } });
             break;

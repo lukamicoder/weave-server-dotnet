@@ -1,11 +1,11 @@
 body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 14px; }
 
-#wrapper { width: 600px; margin: 10px auto; }
-#header { float: left; width: 610px; margin-bottom: 10px; }
+#wrapper { width: 700px; margin: 10px auto; }
+#header { float: left; width: 710px; margin-bottom: 10px; }
 #logo { float: left; font-size: 24px; color: #f26522; letter-spacing: -1px; }
 #logout  { float: right; padding-top: 7px; margin-right: -25px; font-size: smaller; color: #ffffff; }
 #logout a { color: #ffffff; font-weight: bold; }
-#content { float: left; width: 600px; padding: 15px 20px 20px 20px; background-color: #ececec; border-top: 5px solid #f26522; border-bottom: 10px solid #3c3c3c; }
+#content { float: left; width: 700px; padding: 15px 20px 20px 20px; background-color: #ececec; border-top: 5px solid #f26522; border-bottom: 10px solid #3c3c3c; }
 
 .link { font-weight: bold; color: #000000; }
 .linkdiv { float: right; padding-bottom: 20px; padding-left: 30px; }
