@@ -39,9 +39,15 @@ namespace WeaveCore {
             using (WeaveContext context = new WeaveContext()) {
                 string hash = WeaveHelper.ConvertToHash(password);
 
-                id = (from u in context.Users
-                      where u.UserName == userName && u.Md5 == hash
-                      select u.UserId).SingleOrDefault();
+                if (userName.Contains("@")) {
+                    id = (from u in context.Users
+                          where u.Email == userName && u.Md5 == hash
+                          select u.UserId).SingleOrDefault();
+                } else {
+                    id = (from u in context.Users
+                          where u.UserName == userName && u.Md5 == hash
+                          select u.UserId).SingleOrDefault();
+                }
             }
 
             return id;
@@ -58,6 +64,7 @@ namespace WeaveCore {
                                     select new {
                                         u.UserId,
                                         u.UserName,
+                                        u.Email,
                                         Payload = (Double?)g.Sum(p => p.PayloadSize),
                                         DateMin = g.Min(p => p.Modified),
                                         DateMax = g.Max(p => p.Modified)
@@ -66,6 +73,7 @@ namespace WeaveCore {
                     foreach (var user in userList) {
                         long userId = user.UserId;
                         string userName = user.UserName;
+                        string email = user.Email;
                         string payload = "";
                         if (user.Payload != null) {
                             double total = (user.Payload.Value * 1000) / 1024 / 1024;
@@ -86,7 +94,7 @@ namespace WeaveCore {
                             dateMax = 1000 * user.DateMax.Value;
                         }
 
-                        list.Add(new { UserId = userId, UserName = userName, Payload = payload, DateMin = dateMin, DateMax = dateMax });
+                        list.Add(new { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
                     }
                 } catch (EntityException x) {
                     RaiseLogEvent(this, x.Message, LogType.Error);
@@ -109,6 +117,7 @@ namespace WeaveCore {
                                     select new {
                                         u.UserId,
                                         u.UserName,
+                                        u.Email,
                                         Payload = (Double?)g.Sum(p => p.PayloadSize),
                                         DateMin = g.Min(p => p.Modified),
                                         DateMax = g.Max(p => p.Modified)
@@ -116,6 +125,7 @@ namespace WeaveCore {
 
                     foreach (var user in userList) {
                         string userName = user.UserName;
+                        string email = user.Email;
                         string payload = "";
                         if (user.Payload != null) {
                             double total = (user.Payload.Value * 1000) / 1024 / 1024;
@@ -136,7 +146,7 @@ namespace WeaveCore {
                             dateMax = 1000 * user.DateMax.Value;
                         }
 
-                        list.Add(new { UserId = userId, UserName = userName, Payload = payload, DateMin = dateMin, DateMax = dateMax });
+                        list.Add(new { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
                     }
                 } catch (EntityException x) {
                     RaiseLogEvent(this, x.Message, LogType.Error);
@@ -181,21 +191,21 @@ namespace WeaveCore {
             return list;
         }
 
-        public bool CreateUser(string userName, string password) {
+        public bool CreateUser(string userName, string password, string email) {
             bool result = false;
 
             if (!String.IsNullOrEmpty(userName)) {
                 using (WeaveContext context = new WeaveContext()) {
                     try {
                         string hash = WeaveHelper.ConvertToHash(password);
-                        User user = new User { UserName = userName, Md5 = hash };
+                        User user = new User { Email = email, UserName = userName, Md5 = hash };
                         context.Users.Add(user);
 
                         int x = context.SaveChanges();
 
                         if (x != 0) {
                             result = true;
-                            RaiseLogEvent(this, String.Format("{0} user account has been created.", userName), LogType.Information);
+                            RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Information);
                         }
                     } catch (EntityException x) {
                         RaiseLogEvent(this, x.Message, LogType.Error);
@@ -207,7 +217,7 @@ namespace WeaveCore {
             return result;
         }
 
-        public bool IsUniqueUserName(string userName) {
+        public bool IsUserNameUnique(string userName) {
             bool result = false;
 
             using (WeaveContext context = new WeaveContext()) {

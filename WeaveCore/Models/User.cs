@@ -28,6 +28,7 @@ namespace WeaveCore.Models {
 
         public string UserName { get; set; }
         public string Md5 { get; set; }
+        public string Email { get; set; }
 
         public virtual ICollection<Wbo> Wbos { get; set; }
     }

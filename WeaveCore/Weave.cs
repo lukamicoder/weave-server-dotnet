@@ -52,6 +52,12 @@ namespace WeaveCore {
                 return;
             }
 
+            if (_req.PathName == "user") {
+                if (!RequestUser()) {
+                    return;
+                } 
+            }
+
             try {
                 _db = new WeaveStorage();
                 _db.LogEvent += OnLogEvent;
@@ -383,6 +389,36 @@ namespace WeaveCore {
                     ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
                 }
             }
+        }
+
+        private bool RequestUser() {
+            if (_req.UserName == "a") {
+                Response = "0";
+                return false;
+            }
+
+            if (_req.UserName.Length == 32) {
+                WeaveAdmin wa = new WeaveAdmin();
+                if (_req.RequestMethod == RequestMethod.GET && _req.Function == RequestFunction.NotSupported) {
+                    Response = wa.IsUserNameUnique(_req.UserName) ? "0" : "1";
+                    return false;
+                }
+
+                if (_req.RequestMethod == RequestMethod.PUT) {
+                    Dictionary<string, object> dic = (Dictionary<string, object>)_jss.DeserializeObject(_req.Content);
+
+                    if (dic == null || dic.Count == 0) {
+                        Response = ReportProblem("Unable to extract from json", 400);
+                        return false;
+                    }
+
+                    string output = wa.CreateUser( _req.UserName, (string)dic["password"], (string)dic["email"]);
+                    Response = String.IsNullOrEmpty(output) ? _req.UserName : output;
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private string ReportProblem(object message, int code) {

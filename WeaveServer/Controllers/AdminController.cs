@@ -82,7 +82,11 @@ namespace WeaveServer.Controllers {
                 return Content("Passwords do not match.");
             }
 
-            return Content(_weaveAdmin.CreateUser(user, pswd));
+            if (user.Contains("@")) {
+                return Content("Username cannot contain an \"@\" character.");
+            }
+
+            return Content(_weaveAdmin.CreateUser(user, pswd, null));
         }
 
         [HttpPost]

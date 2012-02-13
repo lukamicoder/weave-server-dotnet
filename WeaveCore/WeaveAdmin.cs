@@ -63,19 +63,25 @@ namespace WeaveCore {
             }
         }
 
-        public string CreateUser(string userName, string password) {
+        public string CreateUser(string userName, string password, string email) {
             string msg = "";
-            if (String.IsNullOrEmpty(userName) && String.IsNullOrEmpty(password)) {
+            if (String.IsNullOrEmpty(userName) || String.IsNullOrEmpty(password)) {
                 msg = "Username and password cannot be blank.";
-            } else if (!WeaveHelper.IsUserNameValid(userName)) {
+            } else if (!userName.Contains("@") && !WeaveHelper.IsUserNameValid(userName)) {
                 msg = "Username can only consist of characters (A-Z or a-z), numbers (0-9), and these special characters: _ -.";
-            } else if (!_db.IsUniqueUserName(userName)) {
+            } else if (!IsUserNameUnique(userName)) {
                 msg = "Username already exists.";
-            } else if (!_db.CreateUser(userName, password)) {
-                msg = String.Format("There was an error on adding {0}.", userName);
+            } else {
+                if (!_db.CreateUser(userName, password, email)) {
+                    msg = String.Format("There was an error on adding {0}.", userName);
+                }
             }
 
             return msg;
+        }
+
+        public bool IsUserNameUnique(string userName) {
+            return _db.IsUserNameUnique(userName);
         }
 
         public string DeleteUser(Int32 userId) {

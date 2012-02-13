@@ -54,8 +54,7 @@ namespace WeaveCore {
                 return;
             }
 
-            string baseUrl = "";
-            baseUrl = url.AbsoluteUri;
+            string baseUrl = url.AbsoluteUri;
             if (url.AbsolutePath.Length > 1) {
                 baseUrl = baseUrl.Substring(0, baseUrl.IndexOf(url.AbsolutePath) + 1);
             }
@@ -161,10 +160,6 @@ namespace WeaveCore {
                 ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
                 ErrorCode = 404;
                 IsValid = false;
-            } else if (Function == RequestFunction.NotSupported) {
-                ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
-                ErrorCode = 400;
-                IsValid = false;
             } else if (Function == RequestFunction.Password && RequestMethod != RequestMethod.POST) {
                 ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 ErrorCode = 400;
@@ -173,23 +168,25 @@ namespace WeaveCore {
                 ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 ErrorCode = 400;
                 IsValid = false;
-            } else if (RequestMethod != RequestMethod.DELETE && Function != RequestFunction.Password && !WeaveHelper.IsUserNameValid(Collection)) {
-                ErrorMessage = WeaveErrorCodes.InvalidCollection;
-                ErrorCode = 400;
-                IsValid = false;
             } else if ((RequestMethod == RequestMethod.POST || RequestMethod == RequestMethod.PUT) && String.IsNullOrEmpty(Content)) {
                 ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 ErrorCode = 400;
                 IsValid = false;
-            } else if (String.IsNullOrEmpty(Password)) {
-                ErrorMessage = WeaveErrorCodes.MissingPassword;
-                ErrorCode = 401;
-                IsValid = false;
-            } else if (UserName != _loginName) {
-                ErrorMessage = WeaveErrorCodes.UseridPathMismatch;
-                ErrorCode = 401;
-                IsValid = false;
-            }  
+            } else if (PathName != "user") {
+                if (Function == RequestFunction.NotSupported) {
+                    ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
+                    ErrorCode = 400;
+                    IsValid = false;
+                } else if (String.IsNullOrEmpty(Password)) {
+                    ErrorMessage = WeaveErrorCodes.MissingPassword;
+                    ErrorCode = 401;
+                    IsValid = false;
+                } else if (UserName != _loginName) {
+                    ErrorMessage = WeaveErrorCodes.UseridPathMismatch;
+                    ErrorCode = 401;
+                    IsValid = false;
+                }
+            }
         }
     }
 }
