@@ -348,13 +348,13 @@ namespace WeaveCore {
 
                     switch (sort) {
                         case "index":
-                            wbosToDelete.OrderByDescending(wbo => wbo.SortIndex);
+                            wbosToDelete = wbosToDelete.OrderByDescending(wbo => wbo.SortIndex);
                             break;
                         case "newest":
-                            wbosToDelete.OrderByDescending(wbo => wbo.Modified);
+                            wbosToDelete = wbosToDelete.OrderByDescending(wbo => wbo.Modified);
                             break;
                         case "oldest":
-                            wbosToDelete.OrderBy(wbo => wbo.Modified);
+                            wbosToDelete = wbosToDelete.OrderBy(wbo => wbo.Modified);
                             break;
                     }
 
@@ -449,13 +449,13 @@ namespace WeaveCore {
 
                     switch (sort) {
                         case "index":
-                            wbosToGet.OrderByDescending(wbo => wbo.SortIndex);
+                            wbosToGet = wbosToGet.OrderByDescending(wbo => wbo.SortIndex);
                             break;
                         case "newest":
-                            wbosToGet.OrderByDescending(wbo => wbo.Modified);
+                            wbosToGet = wbosToGet.OrderByDescending(wbo => wbo.Modified);
                             break;
                         case "oldest":
-                            wbosToGet.OrderBy(wbo => wbo.Modified);
+                            wbosToGet = wbosToGet.OrderBy(wbo => wbo.Modified);
                             break;
                     }
 
