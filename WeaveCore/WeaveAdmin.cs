@@ -19,15 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
-using System.Web.Script.Serialization;
+using System.Collections.Generic;
+using ServiceStack.Text;
 
 namespace WeaveCore {
     public class WeaveAdmin : WeaveLogEventBase {
-        JavaScriptSerializer _jss;
         WeaveAdminStorage _db;
 
         public WeaveAdmin() {
-            _jss = new JavaScriptSerializer();
             _db = new WeaveAdminStorage();
             _db.LogEvent += OnLogEvent;
         }
@@ -39,7 +38,7 @@ namespace WeaveCore {
         public string GetUserList() {
             try {
                 var list = _db.GetUserList();
-                return _jss.Serialize(list);
+                return JsonSerializer.SerializeToString(list);
             } catch (WeaveException ex) {
                 return String.Format("Error: {0}", ex.Message);
             }
@@ -48,7 +47,7 @@ namespace WeaveCore {
         public string GetUserSummary(Int32 userId) {
             try {
                 var list = _db.GetUserSummary(userId);
-                return _jss.Serialize(list);
+                return JsonSerializer.SerializeToString(list);
             } catch (WeaveException ex) {
                 return String.Format("Error: {0}", ex.Message);
             }
@@ -57,7 +56,7 @@ namespace WeaveCore {
         public string GetUserDetails(Int32 userId) {
             try {
                 var list = _db.GetUserDetails(userId);
-                return _jss.Serialize(list);
+                return JsonSerializer.SerializeToString(list);
             } catch (WeaveException ex) {
                 return String.Format("Error: {0}", ex.Message);
             }

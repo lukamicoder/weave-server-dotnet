@@ -53,8 +53,8 @@ namespace WeaveCore {
             return id;
         }
 
-        public List<object> GetUserList() {
-            List<object> list = new List<object>();
+        public List<UserResult> GetUserList() {
+            List<UserResult> list = new List<UserResult>();
 
             using (WeaveContext context = new WeaveContext()) {
                 try {
@@ -94,7 +94,7 @@ namespace WeaveCore {
                             dateMax = 1000 * user.DateMax.Value;
                         }
 
-                        list.Add(new { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
+                        list.Add(new UserResult { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
                     }
                 } catch (EntityException x) {
                     RaiseLogEvent(this, x.Message, LogType.Error);
@@ -105,8 +105,8 @@ namespace WeaveCore {
             return list;
         }
 
-        public List<object> GetUserSummary(Int32 userId) {
-            List<object> list = new List<object>();
+        public List<UserResult> GetUserSummary(Int32 userId) {
+            List<UserResult> list = new List<UserResult>();
 
             using (WeaveContext context = new WeaveContext()) {
                 try {
@@ -146,7 +146,7 @@ namespace WeaveCore {
                             dateMax = 1000 * user.DateMax.Value;
                         }
 
-                        list.Add(new { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
+                        list.Add(new UserResult { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
                     }
                 } catch (EntityException x) {
                     RaiseLogEvent(this, x.Message, LogType.Error);
@@ -157,8 +157,8 @@ namespace WeaveCore {
             return list;
         }
 
-        public List<object> GetUserDetails(Int32 userId) {
-            List<object> list = new List<object>();
+        public List<UserDetailResult> GetUserDetails(Int32 userId) {
+            List<UserDetailResult> list = new List<UserDetailResult>();
             using (WeaveContext context = new WeaveContext()) {
                 try {
                     var cts = from w in context.Wbos
@@ -179,7 +179,7 @@ namespace WeaveCore {
                                 }
                             }
 
-                            list.Add(new { Collection = WeaveCollectionDictionary.GetValue(p.Collection), p.Count, Payload = payload });
+                            list.Add(new UserDetailResult { Collection = WeaveCollectionDictionary.GetValue(p.Collection), Count = p.Count, Payload = payload });
                         }
                     }
                 } catch (EntityException x) {

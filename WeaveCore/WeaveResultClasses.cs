@@ -20,11 +20,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Web.Script.Serialization;
+using ServiceStack.Text;
 
 namespace WeaveCore {
+    class UserResult {
+        public long UserId { get; set; }
+        public string UserName { get; set; }
+        public string Payload { get; set; }
+        public double DateMin { get; set; } 
+        public double DateMax { get; set; }    
+    }
+
+    class UserDetailResult {
+        public string Collection { get; set; }
+        public long Count { get; set; }
+        public string Payload { get; set; }
+    }
+
     class WeaveResultList {
-        JavaScriptSerializer _jss = new JavaScriptSerializer();
         Dictionary<string, object> _result = new Dictionary<string, object>();
         Collection<string> _successIds;
         Dictionary<string, Collection<string>> _failedIds;
@@ -58,7 +71,8 @@ namespace WeaveCore {
             _result.Add("modified", _modified);
             _result.Add("success", SuccessIds);
             _result.Add("failed", FailedIds);
-            return _jss.Serialize(_result);
+
+            return JsonSerializer.SerializeToString(_result);
         }
     }
 }

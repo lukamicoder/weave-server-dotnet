@@ -24,11 +24,10 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
-using System.Web.Script.Serialization;
+using ServiceStack.Text;
 
 namespace WeaveCore {
     public class Weave : WeaveLogEventBase {
-        JavaScriptSerializer _jss;
         WeaveStorage _db;
         WeaveRequest _req;
 
@@ -39,8 +38,6 @@ namespace WeaveCore {
 
         public Weave(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
             _req = new WeaveRequest(url, serverVariables, queryString, inputStream);
-
-            _jss = new JavaScriptSerializer();
 
             Headers = new Dictionary<string, string> { { "Content-type", "application/json" }, { "X-Weave-Timestamp", _req.RequestTime + "" } };
 
@@ -107,16 +104,16 @@ namespace WeaveCore {
             try {
                 switch (_req.Collection) {
                     case "quota":
-                        Response = _jss.Serialize(new[] { _db.GetStorageTotal() });
+                        Response = JsonSerializer.SerializeToString(new[] { _db.GetStorageTotal() });
                         break;
                     case "collections":
-                        Response = _jss.Serialize(_db.GetCollectionListWithTimestamps());
+                        Response = JsonSerializer.SerializeToString(_db.GetCollectionListWithTimestamps());
                         break;
                     case "collection_counts":
-                        Response = _jss.Serialize(_db.GetCollectionListWithCounts());
+                        Response = JsonSerializer.SerializeToString(_db.GetCollectionListWithCounts());
                         break;
                     case "collection_usage":
-                        Response = _jss.Serialize(_db.GetCollectionStorageTotals());
+                        Response = JsonSerializer.SerializeToString(_db.GetCollectionStorageTotals());
                         break;
                     default:
                         Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
@@ -192,7 +189,7 @@ namespace WeaveCore {
                                 if (full == "1") {
                                     sb.Append(wbo.ToJson());
                                 } else {
-                                    sb.Append(_jss.Serialize(wbo.Id));
+                                    sb.Append(JsonSerializer.SerializeToString(wbo.Id));
                                 }
                             }
                             sb.Append("]");
@@ -203,7 +200,7 @@ namespace WeaveCore {
                                 if (full == "1") {
                                     output = wbo.ToJson();
                                 } else {
-                                    output = _jss.Serialize(wbo.Id);
+                                    output = JsonSerializer.SerializeToString(wbo.Id);
                                 }
 
                                 int length = Encoding.ASCII.GetByteCount(output);
@@ -219,7 +216,7 @@ namespace WeaveCore {
                                 if (full == "1") {
                                     sb.Append(wbo.ToJson().Replace("/\n/", "\u000a"));
                                 } else {
-                                    sb.Append(_jss.Serialize(wbo.Id));
+                                    sb.Append(JsonSerializer.SerializeToString(wbo.Id));
                                 }
 
                                 sb.Append("\n");
@@ -267,7 +264,7 @@ namespace WeaveCore {
             }
 
             if (wbo.Modified != null) {
-                Response = _jss.Serialize(wbo.Modified.Value);
+                Response = JsonSerializer.SerializeToString(wbo.Modified.Value);
             }
         }
 
@@ -293,31 +290,10 @@ namespace WeaveCore {
             var resultList = new WeaveResultList(_req.RequestTime);
             var wboList = new Collection<WeaveBasicObject>();
 
-            object obj = _jss.DeserializeObject(_req.Content);
-            object[] objArray;
+            var dicArray = JsonSerializer.DeserializeFromString<Dictionary<string, object>[]>(_req.Content);
 
-            if (obj != null) {
-                try {
-                    objArray = (object[])obj;
-                } catch (InvalidCastException) {
-                    Response = ReportProblem(WeaveErrorCodes.JsonParse, 400);
-                    return;
-                }
-            } else {
-                Response = ReportProblem(WeaveErrorCodes.JsonParse, 400);
-                return;
-            }
-
-            foreach (object objItem in objArray) {
+            foreach (Dictionary<string, object> dic in dicArray) {
                 WeaveBasicObject wbo = new WeaveBasicObject();
-                Dictionary<string, object> dic;
-
-                try {
-                    dic = (Dictionary<string, object>)objItem;
-                } catch (InvalidCastException) {
-                    RaiseLogEvent(this, "Failed to extract wbo from POST content.", LogType.Error);
-                    continue;
-                }
 
                 if (!wbo.Populate(dic)) {
                     if (wbo.Id != null) {
@@ -365,7 +341,7 @@ namespace WeaveCore {
                     return;
                 }
 
-                Response = _jss.Serialize(_req.RequestTime);
+                Response = JsonSerializer.SerializeToString(_req.RequestTime);
             } else if (_req.Collection != null) {
                 try {
                     _db.DeleteWboList(_req.Collection, null,
@@ -383,7 +359,7 @@ namespace WeaveCore {
                     return;
                 }
 
-                Response = _jss.Serialize(_req.RequestTime);
+                Response = JsonSerializer.SerializeToString(_req.RequestTime);
             } else {
                 if (_req.ServerVariables["HTTP_X_CONFIRM_DELETE"] == null) {
                     ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
@@ -405,7 +381,7 @@ namespace WeaveCore {
                 }
 
                 if (_req.RequestMethod == RequestMethod.PUT) {
-                    Dictionary<string, object> dic = (Dictionary<string, object>)_jss.DeserializeObject(_req.Content);
+                    var dic = JsonSerializer.DeserializeFromString<Dictionary<string, object>>(_req.Content);
 
                     if (dic == null || dic.Count == 0) {
                         Response = ReportProblem("Unable to extract from json", 400);
@@ -443,7 +419,7 @@ namespace WeaveCore {
 
             ErrorStatusCode = code;
 
-            return _jss.Serialize(message);
+            return JsonSerializer.SerializeToString(message);
         }
     }
 }

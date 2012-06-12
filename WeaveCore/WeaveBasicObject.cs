@@ -22,13 +22,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
-using System.Web.Script.Serialization;
+using ServiceStack.Text;
 using WeaveCore.Models;
 
 namespace WeaveCore {
     class WeaveBasicObject {
         Collection<string> _error = new Collection<string>();
-        JavaScriptSerializer _jss = new JavaScriptSerializer();
         private double _ttl = 2100000000;
 
         public string Id { get; set; }
@@ -52,7 +51,7 @@ namespace WeaveCore {
                 return false;
             }
 
-            Dictionary<string, object> dic = (Dictionary<string, object>)_jss.DeserializeObject(json);
+            var dic = JsonSerializer.DeserializeFromString<Dictionary<string, object>>(json);
 
             if (dic == null || dic.Count == 0) {
                 _error.Add("Unable to extract from json");
@@ -171,7 +170,7 @@ namespace WeaveCore {
 
             dic.Add("ttl", Ttl);
 
-            return _jss.Serialize(dic);
+            return JsonSerializer.SerializeToString(dic);
         }
 
         public Collection<string> GetError() {
