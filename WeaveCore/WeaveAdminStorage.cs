@@ -97,7 +97,7 @@ namespace WeaveCore {
                         list.Add(new UserResult { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
                     }
                 } catch (EntityException x) {
-                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
@@ -149,7 +149,7 @@ namespace WeaveCore {
                         list.Add(new UserResult { UserId = userId, UserName = String.IsNullOrEmpty(email) ? userName : email, Payload = payload, DateMin = dateMin, DateMax = dateMax });
                     }
                 } catch (EntityException x) {
-                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
@@ -183,7 +183,7 @@ namespace WeaveCore {
                         }
                     }
                 } catch (EntityException x) {
-                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
@@ -208,7 +208,7 @@ namespace WeaveCore {
                             RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Information);
                         }
                     } catch (EntityException x) {
-                        RaiseLogEvent(this, x.Message, LogType.Error);
+                        RaiseLogEvent(this, x.ToString(), LogType.Error);
                         throw new WeaveException("Database unavailable.", 503);
                     }
                 }
@@ -230,7 +230,7 @@ namespace WeaveCore {
                         result = true;
                     }
                 } catch (EntityException x) {
-                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
@@ -262,7 +262,7 @@ namespace WeaveCore {
                         }
                     }
                 } catch (EntityException x) {
-                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
@@ -287,7 +287,7 @@ namespace WeaveCore {
                         context.SaveChanges();
                     }
                 } catch (EntityException x) {
-                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
@@ -306,7 +306,7 @@ namespace WeaveCore {
 
                     context.Database.ExecuteSqlCommand(sql, param);
                 } catch (EntityException x) {
-                    RaiseLogEvent(this, x.Message, LogType.Error);
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     throw new WeaveException("Database unavailable.", 503);
                 }
             }
