@@ -28,8 +28,8 @@ using ServiceStack.Text;
 
 namespace WeaveCore {
     public class Weave : WeaveLogEventBase {
-        WeaveStorage _db;
-        WeaveRequest _req;
+        readonly WeaveStorage _db;
+        readonly WeaveRequest _req;
 
         public Dictionary<string, string> Headers { get; private set; }
         public string ErrorStatus { get; private set; }
@@ -52,19 +52,19 @@ namespace WeaveCore {
             if (_req.PathName == "user") {
                 if (!RequestUser()) {
                     return;
-                } 
+                }
             }
 
             try {
                 _db = new WeaveStorage();
-                _db.LogEvent += OnLogEvent;
 
-                if (!_db.AuthenticateUser(_req.UserName, _req.Password)) {
+                if (_db.AuthenticateUser(_req.UserName, _req.Password) == 0) {
                     Response = ReportProblem("Authentication failed", 401);
                     return;
                 }
-            } catch (WeaveException x) {
-                Response = ReportProblem(x.Message, x.Code);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
+                Response = ReportProblem("Database unavailable", 503);
                 return;
             }
 
@@ -119,8 +119,9 @@ namespace WeaveCore {
                         Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
                         break;
                 }
-            } catch (WeaveException e) {
-                Response = ReportProblem(e.Message, e.Code);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
+                Response = ReportProblem("Database unavailable", 503);
                 return;
             }
         }
@@ -131,9 +132,10 @@ namespace WeaveCore {
 
             if (_req.Id != null) {
                 try {
-                    wboList = _db.RetrieveWboList(_req.Collection, _req.Id, true, null, null, null, null, null, null, null, null);
-                } catch (WeaveException e) {
-                    Response = ReportProblem(e.Message, e.Code);
+                    wboList = _db.GetWboList(_req.Collection, _req.Id, true, null, null, null, null, null, null, null, null);
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
+                    Response = ReportProblem("Database unavailable", 503);
                     return;
                 }
 
@@ -141,7 +143,6 @@ namespace WeaveCore {
                     Response = wboList[0].ToJson();
                 } else {
                     Response = ReportProblem("record not found", 404);
-                    return;
                 }
             } else {
                 string full = _req.QueryString["full"];
@@ -159,7 +160,7 @@ namespace WeaveCore {
                 }
 
                 try {
-                    wboList = _db.RetrieveWboList(_req.Collection, null, full == "1",
+                    wboList = _db.GetWboList(_req.Collection, null, full == "1",
                                                     _req.QueryString["newer"],
                                                     _req.QueryString["older"],
                                                     _req.QueryString["sort"],
@@ -225,8 +226,9 @@ namespace WeaveCore {
                     }
 
                     Response = sb.ToString();
-                } catch (WeaveException e) {
-                    Response = ReportProblem(e.Message, e.Code);
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
+                    Response = ReportProblem("Database unavailable", 503);
                 }
             }
         }
@@ -237,7 +239,7 @@ namespace WeaveCore {
                 return;
             }
 
-            WeaveBasicObject wbo = new WeaveBasicObject();
+            var wbo = new WeaveBasicObject();
 
             if (!wbo.Populate(_req.Content)) {
                 Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
@@ -248,14 +250,15 @@ namespace WeaveCore {
                 wbo.Id = _req.Id;
             }
 
-            wbo.Collection = _req.Collection;
+            wbo.Collection = WeaveCollectionDictionary.GetKey(_req.Collection);
             wbo.Modified = _req.RequestTime;
 
             if (wbo.Validate()) {
                 try {
                     _db.SaveWbo(wbo);
-                } catch (WeaveException e) {
-                    Response = ReportProblem(e.Message, e.Code);
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
+                    Response = ReportProblem("Database unavailable", 503);
                     return;
                 }
             } else {
@@ -271,10 +274,10 @@ namespace WeaveCore {
         private void RequestPost() {
             if (_req.Function == RequestFunction.Password) {
                 try {
-                    WeaveAdminStorage adbo = new WeaveAdminStorage();
-                    adbo.ChangePassword(_db.UserId, _req.Content);
-                } catch (WeaveException e) {
-                    Response = ReportProblem(e.Message, e.Code);
+                    _db.ChangePassword(_req.Content);
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
+                    Response = ReportProblem("Database unavailable", 503);
                     return;
                 }
 
@@ -293,7 +296,7 @@ namespace WeaveCore {
             var dicArray = JsonSerializer.DeserializeFromString<Dictionary<string, object>[]>(_req.Content);
 
             foreach (Dictionary<string, object> dic in dicArray) {
-                WeaveBasicObject wbo = new WeaveBasicObject();
+                var wbo = new WeaveBasicObject();
 
                 if (!wbo.Populate(dic)) {
                     if (wbo.Id != null) {
@@ -304,7 +307,7 @@ namespace WeaveCore {
                     continue;
                 }
 
-                wbo.Collection = _req.Collection;
+                wbo.Collection = WeaveCollectionDictionary.GetKey(_req.Collection);
                 wbo.Modified = _req.RequestTime;
 
                 if (wbo.Validate()) {
@@ -318,8 +321,9 @@ namespace WeaveCore {
             if (wboList.Count > 0) {
                 try {
                     _db.SaveWboList(wboList, resultList);
-                } catch (WeaveException e) {
-                    Response = ReportProblem(e.Message, e.Code);
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
+                    Response = ReportProblem("Database unavailable", 503);
                     return;
                 }
             }
@@ -336,8 +340,9 @@ namespace WeaveCore {
             if (_req.Id != null) {
                 try {
                     _db.DeleteWbo(_req.Collection, _req.Id);
-                } catch (WeaveException e) {
-                    Response = ReportProblem(e.Message, e.Code);
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
+                    Response = ReportProblem("Database unavailable", 503);
                     return;
                 }
 
@@ -354,8 +359,9 @@ namespace WeaveCore {
                                 _req.QueryString["index_above"],
                                 _req.QueryString["index_below"]
                                 );
-                } catch (WeaveException e) {
-                    Response = ReportProblem(e.Message, e.Code);
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
+                    Response = ReportProblem("Database unavailable", 503);
                     return;
                 }
 
@@ -374,7 +380,7 @@ namespace WeaveCore {
             }
 
             if (_req.UserName.Length == 32) {
-                WeaveAdmin wa = new WeaveAdmin();
+                var wa = new WeaveAdmin();
                 if (_req.RequestMethod == RequestMethod.GET && _req.Function == RequestFunction.NotSupported) {
                     Response = wa.IsUserNameUnique(_req.UserName) ? "0" : "1";
                     return false;
@@ -388,7 +394,7 @@ namespace WeaveCore {
                         return false;
                     }
 
-                    string output = wa.CreateUser( _req.UserName, (string)dic["password"], (string)dic["email"]);
+                    string output = wa.CreateUser(_req.UserName, (string)dic["password"], (string)dic["email"]);
                     Response = String.IsNullOrEmpty(output) ? _req.UserName : output;
                     return false;
                 }

@@ -26,13 +26,16 @@
 
         <Message Text="%0D%0ACopying SQL Server Compact runtime" />
         <Exec Command='IF NOT EXIST "$(OutputPath)\bin\x86" MD "$(OutputPath)\bin\x86"'/>
-        <Exec Command='XCOPY /S /Y "$(MSBuildProjectDirectory)\Library\x86\*.*" "$(OutputPath)\bin\x86"'/>
+        <Exec Command='XCOPY /S /Y "$(MSBuildProjectDirectory)\packages\Microsoft.SqlServer.Compact.4.0.8854.2\NativeBinaries\x86\*.*" "$(OutputPath)\bin\x86"'/>
         <Exec Command='IF NOT EXIST "$(OutputPath)\bin\amd64" MD "$(OutputPath)\bin\amd64"'/>
-        <Exec Command='XCOPY /S /Y "$(MSBuildProjectDirectory)\Library\amd64\*.*" "$(OutputPath)\bin\amd64"'/>
+        <Exec Command='XCOPY /S /Y "$(MSBuildProjectDirectory)\packages\Microsoft.SqlServer.Compact.4.0.8854.2\NativeBinaries\amd64\*.*" "$(OutputPath)\bin\amd64"'/>
 
         <Message Text="%0D%0ARemoving unnecessary files" />
         <Delete Files="$(OutputPath)\Web.Debug.config" Condition="Exists('$(OutputPath)\Web.Debug.config')"/>
         <Delete Files="$(OutputPath)\Web.Release.config" Condition="Exists('$(OutputPath)\Web.Release.config')"/>
+        <Delete Files="$(OutputPath)\Scripts\jquery-1.7.2-vsdoc.js" Condition="Exists('$(OutputPath)\Scripts\jquery-1.7.2-vsdoc.js')"/>
+        <Delete Files="$(OutputPath)\Scripts\jquery-1.7.2.js" Condition="Exists('$(OutputPath)\Scripts\jquery-1.7.2.js')"/>
+        <Delete Files="$(OutputPath)\packages.config" Condition="Exists('$(OutputPath)\packages.config')"/>
         <Exec WorkingDirectory="$(OutputPath)\bin\" Command="DEL *.xml"/>
     </Target>
 </Project>

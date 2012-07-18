@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace WeaveCore {
     public enum RequestMethod { GET, PUT, POST, DELETE }
 
+    public enum DatabaseType { SQLite, MySQL, SQLServer, SQLServerCe }
+
     public enum RequestFunction { NotSupported, Info, Storage, Node, Password }
 
     public enum WeaveErrorCodes {

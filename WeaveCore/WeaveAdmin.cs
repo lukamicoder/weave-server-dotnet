@@ -23,14 +23,13 @@ using ServiceStack.Text;
 
 namespace WeaveCore {
     public class WeaveAdmin : WeaveLogEventBase {
-        WeaveAdminStorage _db;
+        readonly WeaveStorage _db;
 
         public WeaveAdmin() {
-            _db = new WeaveAdminStorage();
-            _db.LogEvent += OnLogEvent;
+            _db = new WeaveStorage();
         }
 
-        public Int32 AuthenticateUser(string userName, string password) {
+        public long AuthenticateUser(string userName, string password) {
             return _db.AuthenticateUser(userName, password);
         }
 
@@ -38,26 +37,29 @@ namespace WeaveCore {
             try {
                 var list = _db.GetUserList();
                 return JsonSerializer.SerializeToString(list);
-            } catch (WeaveException ex) {
-                return String.Format("Error: {0}", ex.Message);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
+                return String.Format("Error: {0}", x.Message);
             }
         }
 
-        public string GetUserSummary(Int32 userId) {
+        public string GetUserSummary(long userId) {
             try {
                 var list = _db.GetUserSummary(userId);
                 return JsonSerializer.SerializeToString(list);
-            } catch (WeaveException ex) {
-                return String.Format("Error: {0}", ex.Message);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
+                return String.Format("Error: {0}", x.Message);
             }
         }
 
-        public string GetUserDetails(Int32 userId) {
+        public string GetUserDetails(long userId) {
             try {
                 var list = _db.GetUserDetails(userId);
                 return JsonSerializer.SerializeToString(list);
-            } catch (WeaveException ex) {
-                return String.Format("Error: {0}", ex.Message);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
+                return String.Format("Error: {0}", x.Message);
             }
         }
 
@@ -70,7 +72,11 @@ namespace WeaveCore {
             } else if (!IsUserNameUnique(userName)) {
                 msg = "Username already exists.";
             } else {
-                if (!_db.CreateUser(userName, password, email)) {
+                try {
+                    _db.CreateUser(userName, password, email); 
+                    RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Information);           
+                } catch (Exception x) {
+                    RaiseLogEvent(this, x.ToString(), LogType.Error);
                     msg = String.Format("There was an error on adding {0}.", userName);
                 }
             }
@@ -82,30 +88,42 @@ namespace WeaveCore {
             return _db.IsUserNameUnique(userName);
         }
 
-        public string DeleteUser(Int32 userId) {
+        public string DeleteUser(long userId) {
             string msg = "";
-            if (!_db.DeleteUser(userId)) {
+            string userName = "";
+
+            try {
+                userName = _db.GetUserName(userId);
+                _db.DeleteUser(userId);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
                 msg = "There was an error on deleting user.";
+            }
+
+            if (String.IsNullOrEmpty(msg)) {
+                RaiseLogEvent(this, String.Format("{0} user account has been deleted.", userName), LogType.Information);
             }
 
             return msg;
         }
 
-        public string ChangePassword(Int32 userId, string password) {
+        public string ChangePassword(long userId, string password) {
             try {
                 _db.ChangePassword(userId, password);
-            } catch (WeaveException ex) {
-                return String.Format("Error: {0}", ex.Message);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
+                return String.Format("Error: {0}", x.Message);
             }
 
             return "";
         }
 
-        public string ClearUserData(Int32 userId) {
+        public string ClearUserData(long userId) {
             try {
                 _db.ClearUserData(userId);
-            } catch (WeaveException ex) {
-                return String.Format("Error: {0}", ex.Message);
+            } catch (Exception x) {
+                RaiseLogEvent(this, x.ToString(), LogType.Error);
+                return String.Format("Error: {0}", x.Message);
             }
 
             return "";

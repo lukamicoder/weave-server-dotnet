@@ -27,6 +27,10 @@ using WeaveCore;
 namespace WeaveServer.Services {
     static class Logger {
         public static void WriteMessage(string msg, LogType type) {
+#if DEBUG
+            Debug.WriteLine(msg);
+            return;
+#endif
             string sourceName = ConfigurationManager.AppSettings["EventLogSourceName"];
 
             if (String.IsNullOrEmpty(sourceName)) {

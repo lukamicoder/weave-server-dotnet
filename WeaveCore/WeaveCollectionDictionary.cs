@@ -26,11 +26,11 @@ namespace WeaveCore {
         private static Dictionary<short, string> _key = new Dictionary<short, string>
                                                       {
                                                               {0, "addson"},
-                                                              {1, "client"},
+                                                              {1, "clients"},
                                                               {2, "crypto"},
                                                               {3, "forms"},
                                                               {4, "history"},
-                                                              {5, "key"},
+                                                              {5, "keys"},
                                                               {6, "meta"},
                                                               {7, "bookmarks"},
                                                               {8, "prefs"},

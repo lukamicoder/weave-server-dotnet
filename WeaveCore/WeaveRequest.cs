@@ -25,7 +25,7 @@ using System.Text;
 
 namespace WeaveCore {
     class WeaveRequest {
-        public double RequestTime { get; private set; }
+        public long RequestTime { get; private set; }
 
         private string _loginName;
         public string Password { get; private set; }
@@ -61,7 +61,7 @@ namespace WeaveCore {
             Url = baseUrl;
 
             TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-            RequestTime = Math.Round(ts.TotalSeconds, 2); 
+            RequestTime = Convert.ToInt64(ts.TotalSeconds); 
 
             ServerVariables = serverVariables;
             QueryString = queryString;

@@ -23,26 +23,36 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using ServiceStack.Text;
-using WeaveCore.Models;
 
 namespace WeaveCore {
-    class WeaveBasicObject {
+    public class WeaveBasicObject {
         Collection<string> _error = new Collection<string>();
         private double _ttl = 2100000000;
 
+        public long? UserId { get; set; }
         public string Id { get; set; }
-        public string Collection { get; set; }
+        public short Collection { get; set; }
         public double? Modified { get; set; }
         public string Payload { get; set; }
-        public int? SortIndex { get; set; }
+        public long? SortIndex { get; set; }
 
         public double Ttl {
             get { return _ttl; }
-            set { _ttl = value;  }
+            set {
+                if (value > 0 && value < 31536000) {
+                    TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+                    double timeNow = Convert.ToDouble(ts.TotalSeconds);
+                    _ttl = timeNow + value;
+                } else {
+                    _ttl = 0;
+                }
+            }
         }
 
-        public int? GetPayloadSize() {
-            return (String.IsNullOrEmpty(Payload)) ? null : (int?)Encoding.ASCII.GetByteCount(Payload);
+        public long? PayloadSize {
+            get {
+                return (String.IsNullOrEmpty(Payload)) ? null : (long?)Encoding.ASCII.GetByteCount(Payload);
+            }
         }
 
         public bool Populate(string json) {
@@ -71,7 +81,7 @@ namespace WeaveCore {
             }
 
             if (dic.ContainsKey("collection") && dic["collection"] != DBNull.Value) {
-                Collection = dic["collection"] as string;
+                Collection = WeaveCollectionDictionary.GetKey((string)dic["collection"]);
             }
 
             if (dic.ContainsKey("modified") && dic["modified"] != DBNull.Value) {
@@ -84,7 +94,7 @@ namespace WeaveCore {
 
             if (dic.ContainsKey("sortindex") && dic["sortindex"] != DBNull.Value) {
                 try {
-                    SortIndex = Convert.ToInt32(dic["sortindex"]);
+                    SortIndex = Convert.ToInt64(dic["sortindex"]);
                 } catch (InvalidCastException) {
                     return false;
                 }
@@ -93,9 +103,9 @@ namespace WeaveCore {
             if (dic.ContainsKey("ttl") && dic["ttl"] != DBNull.Value) {
                 try {
                     double tmpTtl = Convert.ToDouble(dic["ttl"]);
-                    if (tmpTtl > 0 && tmpTtl < 31536000) {                      
+                    if (tmpTtl > 0 && tmpTtl < 31536000) {
                         TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-                        double timeNow = Math.Round(ts.TotalSeconds, 2);
+                        double timeNow = Convert.ToDouble(ts.TotalSeconds);
                         Ttl = timeNow + tmpTtl;
                     } else if (tmpTtl > 2100000000) {
                         return false;
@@ -121,10 +131,6 @@ namespace WeaveCore {
                 _error.Add("No modification date");
             }
 
-            if (Collection == null || Collection.Length > 64) {
-                _error.Add("Invalid collection");
-            }
-
             if (SortIndex.HasValue && (SortIndex > 999999999 || SortIndex < -999999999)) {
                 _error.Add("Invalid sortindex");
             }
@@ -133,16 +139,12 @@ namespace WeaveCore {
                 _error.Add("Invalid expiration date");
             }
 
-            if (GetPayloadSize() > 262144) {
+            if (PayloadSize > 262144) {
                 //Larger than 256KByte
                 _error.Add("Payload too large");
             }
 
-            if (_error.Count > 0) {
-                return false;
-            }
-
-            return true;
+            return _error.Count <= 0;
         }
 
         public string ToJson() {
@@ -164,10 +166,6 @@ namespace WeaveCore {
                 dic.Add("sortindex", SortIndex.Value);
             }
 
-            if (Collection != null) {
-                dic.Add("collection", Collection);
-            }
-
             dic.Add("ttl", Ttl);
 
             return JsonSerializer.SerializeToString(dic);
@@ -179,20 +177,6 @@ namespace WeaveCore {
 
         public void ClearError() {
             _error = new Collection<string>();
-        }
-
-        public Wbo ToModelWbo() {
-            Wbo wbo = new Wbo();
-
-            wbo.Collection = WeaveCollectionDictionary.GetKey(Collection);
-            wbo.Id = Id;
-            wbo.Modified = Modified;
-            wbo.Payload = Payload;
-            wbo.PayloadSize = GetPayloadSize();
-            wbo.SortIndex = SortIndex;
-            wbo.Ttl = Ttl;
-
-            return wbo;
         }
     }
 }

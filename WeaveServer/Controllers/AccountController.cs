@@ -33,13 +33,13 @@ namespace WeaveServer.Controllers {
             _weaveAdmin.LogEvent += OnLogEvent;
         }
 
-        private Int32 GetUserId() {
-            int userId = 0;
+        private long GetUserId() {
+            long userId = 0;
             if (Request != null && Request.IsAuthenticated) {
                 FormsIdentity id = (FormsIdentity) HttpContext.User.Identity;
                 FormsAuthenticationTicket ticket = id.Ticket;
 
-                Int32.TryParse(ticket.UserData, out userId);
+                long.TryParse(ticket.UserData, out userId);
             }
 
             return userId;
@@ -56,7 +56,7 @@ namespace WeaveServer.Controllers {
 
             string user = form["login"];
             string pswd = form["password"];
-            int userId = _weaveAdmin.AuthenticateUser(user, pswd);
+            long userId = _weaveAdmin.AuthenticateUser(user, pswd);
             if (userId > 0) {
                 FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, userId + "");
                 string cookieStr = FormsAuthentication.Encrypt(ticket);

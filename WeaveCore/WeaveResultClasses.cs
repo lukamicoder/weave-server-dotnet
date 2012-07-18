@@ -23,21 +23,21 @@ using System.Collections.ObjectModel;
 using ServiceStack.Text;
 
 namespace WeaveCore {
-    class UserResult {
+    public class UserResult {
         public long UserId { get; set; }
         public string UserName { get; set; }
         public string Payload { get; set; }
-        public double DateMin { get; set; } 
-        public double DateMax { get; set; }    
+        public double DateMin { get; set; }
+        public double DateMax { get; set; }
     }
 
-    class UserDetailResult {
+    public class UserDetailResult {
         public string Collection { get; set; }
         public long Count { get; set; }
         public string Payload { get; set; }
     }
 
-    class WeaveResultList {
+    public class WeaveResultList {
         Dictionary<string, object> _result = new Dictionary<string, object>();
         Collection<string> _successIds;
         Dictionary<string, Collection<string>> _failedIds;
@@ -54,7 +54,7 @@ namespace WeaveCore {
                 }
 
                 return _successIds;
-            }   
+            }
         }
 
         public Dictionary<string, Collection<string>> FailedIds {
