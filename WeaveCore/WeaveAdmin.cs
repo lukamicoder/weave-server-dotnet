@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
-using ServiceStack.Text;
+using Newtonsoft.Json;
 
 namespace WeaveCore {
     public class WeaveAdmin : WeaveLogEventBase {
@@ -36,7 +36,7 @@ namespace WeaveCore {
         public string GetUserList() {
             try {
                 var list = _db.GetUserList();
-                return JsonSerializer.SerializeToString(list);
+                return JsonConvert.SerializeObject(list);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);
@@ -46,7 +46,7 @@ namespace WeaveCore {
         public string GetUserSummary(long userId) {
             try {
                 var list = _db.GetUserSummary(userId);
-                return JsonSerializer.SerializeToString(list);
+                return JsonConvert.SerializeObject(list);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);
@@ -56,7 +56,7 @@ namespace WeaveCore {
         public string GetUserDetails(long userId) {
             try {
                 var list = _db.GetUserDetails(userId);
-                return JsonSerializer.SerializeToString(list);
+                return JsonConvert.SerializeObject(list);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);

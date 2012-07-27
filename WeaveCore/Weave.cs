@@ -24,7 +24,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
-using ServiceStack.Text;
+using Newtonsoft.Json;
 
 namespace WeaveCore {
     public class Weave : WeaveLogEventBase {
@@ -104,16 +104,16 @@ namespace WeaveCore {
             try {
                 switch (_req.Collection) {
                     case "quota":
-                        Response = JsonSerializer.SerializeToString(new[] { _db.GetStorageTotal() });
+                        Response = JsonConvert.SerializeObject(new[] { _db.GetStorageTotal() });
                         break;
                     case "collections":
-                        Response = JsonSerializer.SerializeToString(_db.GetCollectionListWithTimestamps());
+                        Response = JsonConvert.SerializeObject(_db.GetCollectionListWithTimestamps());
                         break;
                     case "collection_counts":
-                        Response = JsonSerializer.SerializeToString(_db.GetCollectionListWithCounts());
+                        Response = JsonConvert.SerializeObject(_db.GetCollectionListWithCounts());
                         break;
                     case "collection_usage":
-                        Response = JsonSerializer.SerializeToString(_db.GetCollectionStorageTotals());
+                        Response = JsonConvert.SerializeObject(_db.GetCollectionStorageTotals());
                         break;
                     default:
                         Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
@@ -190,7 +190,7 @@ namespace WeaveCore {
                                 if (full == "1") {
                                     sb.Append(wbo.ToJson());
                                 } else {
-                                    sb.Append(JsonSerializer.SerializeToString(wbo.Id));
+                                    sb.Append(JsonConvert.SerializeObject(wbo.Id));
                                 }
                             }
                             sb.Append("]");
@@ -201,7 +201,7 @@ namespace WeaveCore {
                                 if (full == "1") {
                                     output = wbo.ToJson();
                                 } else {
-                                    output = JsonSerializer.SerializeToString(wbo.Id);
+                                    output = JsonConvert.SerializeObject(wbo.Id);
                                 }
 
                                 int length = Encoding.ASCII.GetByteCount(output);
@@ -217,7 +217,7 @@ namespace WeaveCore {
                                 if (full == "1") {
                                     sb.Append(wbo.ToJson().Replace("/\n/", "\u000a"));
                                 } else {
-                                    sb.Append(JsonSerializer.SerializeToString(wbo.Id));
+                                    sb.Append(JsonConvert.SerializeObject(wbo.Id));
                                 }
 
                                 sb.Append("\n");
@@ -267,7 +267,7 @@ namespace WeaveCore {
             }
 
             if (wbo.Modified != null) {
-                Response = JsonSerializer.SerializeToString(wbo.Modified.Value);
+                Response = JsonConvert.SerializeObject(wbo.Modified.Value);
             }
         }
 
@@ -293,7 +293,7 @@ namespace WeaveCore {
             var resultList = new WeaveResultList(_req.RequestTime);
             var wboList = new Collection<WeaveBasicObject>();
 
-            var dicArray = JsonSerializer.DeserializeFromString<Dictionary<string, object>[]>(_req.Content);
+            var dicArray = JsonConvert.DeserializeObject<Dictionary<string, object>[]>(_req.Content);
 
             foreach (Dictionary<string, object> dic in dicArray) {
                 var wbo = new WeaveBasicObject();
@@ -314,7 +314,6 @@ namespace WeaveCore {
                     wboList.Add(wbo);
                 } else {
                     resultList.FailedIds[wbo.Id] = wbo.GetError();
-                    wbo.ClearError();
                 }
             }
 
@@ -346,7 +345,7 @@ namespace WeaveCore {
                     return;
                 }
 
-                Response = JsonSerializer.SerializeToString(_req.RequestTime);
+                Response = JsonConvert.SerializeObject(_req.RequestTime);
             } else if (_req.Collection != null) {
                 try {
                     _db.DeleteWboList(_req.Collection, null,
@@ -365,7 +364,7 @@ namespace WeaveCore {
                     return;
                 }
 
-                Response = JsonSerializer.SerializeToString(_req.RequestTime);
+                Response = JsonConvert.SerializeObject(_req.RequestTime);
             } else {
                 if (_req.ServerVariables["HTTP_X_CONFIRM_DELETE"] == null) {
                     ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
@@ -387,7 +386,7 @@ namespace WeaveCore {
                 }
 
                 if (_req.RequestMethod == RequestMethod.PUT) {
-                    var dic = JsonSerializer.DeserializeFromString<Dictionary<string, object>>(_req.Content);
+                    var dic = JsonConvert.DeserializeObject<Dictionary<string, object>>(_req.Content);
 
                     if (dic == null || dic.Count == 0) {
                         Response = ReportProblem("Unable to extract from json", 400);
@@ -425,7 +424,7 @@ namespace WeaveCore {
 
             ErrorStatusCode = code;
 
-            return JsonSerializer.SerializeToString(message);
+            return JsonConvert.SerializeObject(message);
         }
     }
 }

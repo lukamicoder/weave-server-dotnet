@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using ServiceStack.Text;
+using Newtonsoft.Json;
 
 namespace WeaveCore {
     public class UserResult {
@@ -72,7 +72,7 @@ namespace WeaveCore {
             _result.Add("success", SuccessIds);
             _result.Add("failed", FailedIds);
 
-            return JsonSerializer.SerializeToString(_result);
+            return JsonConvert.SerializeObject(_result);
         }
     }
 }

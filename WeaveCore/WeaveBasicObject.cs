@@ -22,7 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
-using ServiceStack.Text;
+using Newtonsoft.Json;
 
 namespace WeaveCore {
     public class WeaveBasicObject {
@@ -44,7 +44,7 @@ namespace WeaveCore {
                     double timeNow = Convert.ToDouble(ts.TotalSeconds);
                     _ttl = timeNow + value;
                 } else {
-                    _ttl = 0;
+                    _ttl = 2100000000;
                 }
             }
         }
@@ -61,7 +61,7 @@ namespace WeaveCore {
                 return false;
             }
 
-            var dic = JsonSerializer.DeserializeFromString<Dictionary<string, object>>(json);
+            var dic = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
 
             if (dic == null || dic.Count == 0) {
                 _error.Add("Unable to extract from json");
@@ -168,15 +168,11 @@ namespace WeaveCore {
 
             dic.Add("ttl", Ttl);
 
-            return JsonSerializer.SerializeToString(dic);
+            return JsonConvert.SerializeObject(dic);
         }
 
         public Collection<string> GetError() {
             return _error;
-        }
-
-        public void ClearError() {
-            _error = new Collection<string>();
         }
     }
 }

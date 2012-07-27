@@ -19,12 +19,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Data.SqlServerCe;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Dapper;
 
 namespace WeaveCore {
@@ -172,6 +174,73 @@ namespace WeaveCore {
 
                 transaction.Commit();
             }
+        }
+
+        public override IList<WeaveBasicObject> GetWboList(string collection, string id, bool full, string newer, string older, string sort, string limit, string offset,
+                                                       string ids, string indexAbove, string indexBelow, long userId) {
+            List<WeaveBasicObject> wboList;
+            StringBuilder sb = new StringBuilder();
+
+            using (var conn = GetConnection()) {
+                sb.Append("SELECT ");
+
+                if (limit != null) {
+                    sb.Append(" TOP(").Append(limit).Append(") ");
+                }
+
+                sb.Append(full ? "*" : "Id").Append(" FROM Wbos WHERE UserId = @userid AND Collection = @collection AND Ttl > @ttl");
+
+                var param = new DynamicParameters();
+                param.Add("UserId", userId);
+                param.Add("Ttl", TimeNow);
+                param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
+
+                if (id != null) {
+                    sb.Append(" AND Id = @id");
+                    param.Add("Id", id);
+                }
+
+                if (ids != null) {
+                    sb.Append(" AND Id IN (@ids)");
+                    param.Add("Ids", ids.Split(new[] { ',' }));
+                }
+
+                if (indexAbove != null) {
+                    sb.Append("AND SortIndex > @indexAbove");
+                    param.Add("IndexAbove", Convert.ToInt64(indexAbove));
+                }
+
+                if (indexBelow != null) {
+                    sb.Append(" AND SortIndex < @indexBelow");
+                    param.Add("IndexBelow", Convert.ToInt64(indexBelow));
+                }
+
+                if (newer != null) {
+                    sb.Append(" AND Modified > @newer");
+                    param.Add("Newer", Convert.ToDouble(newer));
+                }
+
+                if (older != null) {
+                    sb.Append(" AND Modified < @older");
+                    param.Add("Older", Convert.ToDouble(older));
+                }
+
+                switch (sort) {
+                    case "index":
+                        sb.Append(" ORDER BY SortIndex DESC");
+                        break;
+                    case "newest":
+                        sb.Append(" ORDER BY Modified DESC");
+                        break;
+                    case "oldest":
+                        sb.Append(" ORDER BY Modified");
+                        break;
+                }
+
+                wboList = conn.Query<WeaveBasicObject>(sb.ToString(), param).ToList();
+            }
+
+            return wboList;
         }
     }
 }

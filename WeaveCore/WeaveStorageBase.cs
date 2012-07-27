@@ -253,7 +253,7 @@ namespace WeaveCore {
         }
 
         public double GetStorageTotal(long userId) {
-            double result;
+            long result;
 
             const string sql = @"SELECT SUM(Wbos.PayloadSize) 
 						       FROM Wbos
@@ -262,10 +262,10 @@ namespace WeaveCore {
                                AND Ttl > @ttl";
 
             using (var conn = GetConnection()) {
-                result = conn.Query<double>(sql, new { userid = userId, ttl = TimeNow }).SingleOrDefault();
+                result = conn.Query<long>(sql, new { userid = userId, ttl = TimeNow }).SingleOrDefault();
             }
 
-            return result / 1024;
+            return Convert.ToDouble(result / 1024);
         }
 
         public Dictionary<string, int> GetCollectionStorageTotals(long userId) {
@@ -378,73 +378,8 @@ namespace WeaveCore {
             return wbo;
         }
 
-        public IList<WeaveBasicObject> GetWboList(string collection, string id, bool full, string newer, string older, string sort, string limit, string offset,
-                                                       string ids, string indexAbove, string indexBelow, long userId) {
-            List<WeaveBasicObject> wboList;
-            StringBuilder sb = new StringBuilder();
-
-            using (var conn = GetConnection()) {
-                sb.Append("SELECT ").Append(full ? "*" : "Id").Append(" FROM Wbos WHERE UserId = @userid AND Collection = @collection AND Ttl > @ttl");
-
-                var param = new DynamicParameters();
-                param.Add("UserId", userId);
-                param.Add("Ttl", TimeNow);
-                param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
-
-                if (id != null) {
-                    sb.Append(" AND Id = @id");
-                    param.Add("Id", id);
-                }
-
-                if (ids != null) {
-                    sb.Append(" AND Id IN (@ids)");
-                    param.Add("Ids", ids.Split(new[] { ',' }));
-                }
-
-                if (indexAbove != null) {
-                    sb.Append("AND SortIndex > @indexAbove");
-                    param.Add("IndexAbove", Convert.ToInt64(indexAbove));
-                }
-
-                if (indexBelow != null) {
-                    sb.Append(" AND SortIndex < @indexBelow");
-                    param.Add("IndexBelow", Convert.ToInt64(indexBelow));
-                }
-
-                if (newer != null) {
-                    sb.Append(" AND Modified > @newer");
-                    param.Add("Newer", Convert.ToDouble(newer));
-                }
-
-                if (older != null) {
-                    sb.Append(" AND Modified < @older");
-                    param.Add("Older", Convert.ToDouble(older));
-                }
-
-                switch (sort) {
-                    case "index":
-                        sb.Append(" ORDER BY SortIndex DESC");
-                        break;
-                    case "newest":
-                        sb.Append(" ORDER BY Modified DESC");
-                        break;
-                    case "oldest":
-                        sb.Append(" ORDER BY Modified");
-                        break;
-                }
-
-                if (limit != null) {
-                    sb.Append(" LIMIT ").Append(limit);
-                    if (offset != null) {
-                        sb.Append(" OFFSET ").Append(offset);
-                    }
-                }
-
-                wboList = conn.Query<WeaveBasicObject>(sb.ToString(), param).ToList();
-            }
-
-            return wboList;
-        }
+        public abstract IList<WeaveBasicObject> GetWboList(string collection, string id, bool full, string newer, string older, string sort, string limit, string offset,
+                                                       string ids, string indexAbove, string indexBelow, long userId);
         #endregion
     }
 }
