@@ -17,7 +17,6 @@
     <TargetFrameworkProfile />
     <UseIISExpress>false</UseIISExpress>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -27,6 +26,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PackageAsSingleFile>false</PackageAsSingleFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -39,7 +39,7 @@
     <ExcludeApp_Data>true</ExcludeApp_Data>
     <PublishDatabases>false</PublishDatabases>
     <DeployIisAppPath>Default Web Site/WeaveServer</DeployIisAppPath>
-    <PackageAsSingleFile>true</PackageAsSingleFile>
+    <PackageAsSingleFile>false</PackageAsSingleFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
@@ -92,8 +92,8 @@
     <Content Include="Scripts\account.js" />
     <Content Include="Scripts\admin.js" />
     <Content Include="Scripts\helper.js" />
-    <Content Include="Scripts\jquery-1.8.0.min.js" />
-    <Content Include="Scripts\jquery-ui-1.8.23.custom.min.js" />
+    <Content Include="Scripts\jquery-1.8.2_min.js" />
+    <Content Include="Scripts\jquery-ui-1.9.1.custom.min.js" />
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Shared\PageNotFound.cshtml" />
     <Content Include="Web.config">
@@ -165,7 +165,6 @@
     <PostBuildEvent>if not exist "$(TargetDir)x86" md "$(TargetDir)x86"
 start /MIN xcopy /s /y /R "$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\x86\*.*" "$(TargetDir)x86"
 if not exist "$(TargetDir)amd64" md "$(TargetDir)amd64"
-start /MIN xcopy /s /y /R "$(SolutionDir)packages\Microsoft.SqlServer.Compact. 4.0.8876.1\NativeBinaries\amd64\*.*" "$(TargetDir)amd64"</PostBuildEvent>
+start /MIN xcopy /s /y /R "$(SolutionDir)packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\amd64\*.*" "$(TargetDir)amd64"</PostBuildEvent>
   </PropertyGroup>
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
 </Project>

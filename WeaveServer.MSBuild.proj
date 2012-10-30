@@ -1,39 +1,55 @@
 ﻿<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <UsingTask TaskName="TransformXml" AssemblyFile="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\Web\Microsoft.Web.Publishing.Tasks.dll"/>
-    <PropertyGroup>
-        <Configuration>Release</Configuration>
-        <ApplicationName>WeaveServer</ApplicationName>
-        <OutputPath>$(MSBuildProjectDirectory)\_Output</OutputPath>
-    </PropertyGroup>
-    <Target Name="Build">
-        <Message Text="%0D%0AInitial Cleanup" />
-        <RemoveDir Directories="$(OutputPath)\" Condition="Exists('$(OutputPath)\')" />
+  <UsingTask TaskName="TransformXml" AssemblyFile="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\Web\Microsoft.Web.Publishing.Tasks.dll"/>
+  <PropertyGroup>
+    <Configuration>Release</Configuration>
+    <Platform>Any CPU</Platform>
+    <ApplicationName>WeaveServer</ApplicationName>
+    <OutputPath>$(MSBuildProjectDirectory)\_Output</OutputPath>
+  </PropertyGroup>
+  <Target Name="Build">
+    <Message Text="%0D%0AInitial Cleanup" />
+    <RemoveDir Directories="$(OutputPath)\" Condition="Exists('$(OutputPath)\')" />
 
-        <Message Text="%0D%0ACompiling $(ApplicationName)"/>
-        <MSBuild Projects="$(MSBuildProjectDirectory)\$(ApplicationName)NET.sln" 
-                 Properties="Configuration=$(Configuration)" />
+    <Message Text="%0D%0ACompiling $(ApplicationName)"/>
+    <MSBuild Projects="$(MSBuildProjectDirectory)\$(ApplicationName)NET.sln"
+             Properties="Configuration=$(Configuration);Platform=$(Platform)" />
 
-        <Message Text="%0D%0ARunning ASP.NET Compiler" />
-        <MSBuild Projects="$(MSBuildProjectDirectory)\$(ApplicationName)\$(ApplicationName).csproj"
-                 Targets="ResolveReferences;_CopyWebApplication"
-                 Properties="WebProjectOutputDir=$(OutputPath)\;OutDir=$(OutputPath)\bin\;Configuration=$(Configuration);" />
+    <Message Text="%0D%0ARunning ASP.NET Compiler" />
+    <AspNetCompiler PhysicalPath="$(MSBuildProjectDirectory)\$(ApplicationName)"
+                    TargetPath="$(OutputPath)"
+                    VirtualPath="/$(ApplicationName)"
+                    Force="true"
+                    Clean="true"
+                    Debug="false"
+                    Updateable="true"
+                    FixedNames="false"/>
 
-        <Message Text="%0D%0ATransforming web.config"  />
-        <TransformXml Source="$(MSBuildProjectDirectory)\WeaveServer\Web.config"
-                      Transform="$(MSBuildProjectDirectory)\WeaveServer\Web.$(Configuration).config"
-                      Destination="$(OutputPath)\Web.config"
-                      StackTrace="False" />
+    <Message Text="%0D%0ATransforming web.config"  />
+    <TransformXml Source="$(MSBuildProjectDirectory)\WeaveServer\Web.config"
+                  Transform="$(MSBuildProjectDirectory)\WeaveServer\Web.$(Configuration).config"
+                  Destination="$(OutputPath)\Web.config"
+                  StackTrace="False" />
 
-        <Message Text="%0D%0ACopying SQL Server Compact runtime" />
-        <Exec Command='IF NOT EXIST "$(OutputPath)\bin\x86" MD "$(OutputPath)\bin\x86"'/>
-        <Exec Command='XCOPY /S /Y "$(MSBuildProjectDirectory)\packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\x86\*.*" "$(OutputPath)\bin\x86"'/>
-        <Exec Command='IF NOT EXIST "$(OutputPath)\bin\amd64" MD "$(OutputPath)\bin\amd64"'/>
-        <Exec Command='XCOPY /S /Y "$(MSBuildProjectDirectory)\packages\Microsoft.SqlServer.Compact.4.0.8876.1\NativeBinaries\amd64\*.*" "$(OutputPath)\bin\amd64"'/>
-
-        <Message Text="%0D%0ARemoving unnecessary files" />
-        <Delete Files="$(OutputPath)\Web.Debug.config" Condition="Exists('$(OutputPath)\Web.Debug.config')"/>
-        <Delete Files="$(OutputPath)\Web.Release.config" Condition="Exists('$(OutputPath)\Web.Release.config')"/>
-        <Delete Files="$(OutputPath)\packages.config" Condition="Exists('$(OutputPath)\packages.config')"/>
-        <Exec WorkingDirectory="$(OutputPath)\bin\" Command="DEL *.xml"/>
-    </Target>
+    <Message Text="%0D%0ARemoving unnecessary files and folders" />
+    <RemoveDir Directories="$(OutputPath)\Properties\"
+               Condition="Exists('$(OutputPath)\Properties\')" />
+    <RemoveDir Directories="$(OutputPath)\obj\"
+               Condition="Exists('$(OutputPath)\obj\')" />
+    <RemoveDir Directories="$(OutputPath)\Controllers\"
+               Condition="Exists('$(OutputPath)\Controllers\')" />
+    <RemoveDir Directories="$(OutputPath)\Services\"
+               Condition="Exists('$(OutputPath)\Services\')" />
+    <Delete Files="$(OutputPath)\WeaveServer.csproj.user"
+                Condition="Exists('$(OutputPath)\WeaveServer.csproj.user')"/>
+    <Delete Files="$(OutputPath)\WeaveServer.csproj"
+            Condition="Exists('$(OutputPath)\WeaveServer.csproj')"/>
+    <Delete Files="$(OutputPath)\Web.Debug.config" 
+            Condition="Exists('$(OutputPath)\Web.Debug.config')"/>
+    <Delete Files="$(OutputPath)\Web.Release.config" 
+            Condition="Exists('$(OutputPath)\Web.Release.config')"/>
+    <Delete Files="$(OutputPath)\packages.config" 
+            Condition="Exists('$(OutputPath)\packages.config')"/>
+    <Exec WorkingDirectory="$(OutputPath)\bin\" 
+          Command="DEL *.xml"/>
+  </Target>
 </Project>
