@@ -1,5 +1,4 @@
 ﻿<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <UsingTask TaskName="TransformXml" AssemblyFile="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v10.0\Web\Microsoft.Web.Publishing.Tasks.dll"/>
   <PropertyGroup>
     <Configuration>Release</Configuration>
     <Platform>Any CPU</Platform>
@@ -23,12 +22,6 @@
                     Debug="false"
                     Updateable="true"
                     FixedNames="false"/>
-
-    <Message Text="%0D%0ATransforming web.config"  />
-    <TransformXml Source="$(MSBuildProjectDirectory)\WeaveServer\Web.config"
-                  Transform="$(MSBuildProjectDirectory)\WeaveServer\Web.$(Configuration).config"
-                  Destination="$(OutputPath)\Web.config"
-                  StackTrace="False" />
 
     <Message Text="%0D%0ARemoving unnecessary files and folders" />
     <RemoveDir Directories="$(OutputPath)\Properties\"
