@@ -1,4 +1,5 @@
 ﻿using System.Configuration;
+using WeaveCore.Models;
 
 namespace WeaveCore {
     public class WeaveConfigurationSection : ConfigurationSection {

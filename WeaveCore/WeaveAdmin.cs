@@ -1,6 +1,6 @@
 ﻿/* 
 Weave Server.NET <http://code.google.com/p/weave-server-dotnet/>
-Copyright (C) 2012 Karoly Lukacs
+Copyright (C) 2013 Karoly Lukacs
 
 Based on code created by Mozilla Labs.
  
@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using System;
 using Newtonsoft.Json;
+using WeaveCore.Storage;
 
 namespace WeaveCore {
     public class WeaveAdmin : WeaveLogEventBase {
@@ -73,8 +74,8 @@ namespace WeaveCore {
                 msg = "Username already exists.";
             } else {
                 try {
-                    _db.CreateUser(userName, password, email); 
-                    RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Information);           
+                    _db.CreateUser(userName, password, email);
+                    RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Information);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     msg = String.Format("There was an error on adding {0}.", userName);

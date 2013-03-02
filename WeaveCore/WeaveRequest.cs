@@ -1,6 +1,6 @@
 ﻿/* 
 Weave Server.NET <http://code.google.com/p/weave-server-dotnet/>
-Copyright (C) 2012 Karoly Lukacs
+Copyright (C) 2013 Karoly Lukacs
 
 Based on code created by Mozilla Labs.
  
@@ -22,6 +22,7 @@ using System;
 using System.Collections.Specialized;
 using System.IO;
 using System.Text;
+using WeaveCore.Models;
 
 namespace WeaveCore {
     class WeaveRequest {
@@ -61,7 +62,7 @@ namespace WeaveCore {
             Url = baseUrl;
 
             TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
-            RequestTime = Convert.ToInt64(ts.TotalSeconds); 
+            RequestTime = Convert.ToInt64(ts.TotalSeconds);
 
             ServerVariables = serverVariables;
             QueryString = queryString;
@@ -94,7 +95,7 @@ namespace WeaveCore {
             }
 
             string[] path = rawUrl.Split(new[] { '/' });
-            
+
             if (path.Length < 3 || path.Length > 6) {
                 IsValid = false;
                 return;
@@ -136,18 +137,17 @@ namespace WeaveCore {
                         Password = parts[1];
                     }
                 }
-            }         
+            }
         }
 
-        private void GetContent(Stream inputStream ) {
+        private void GetContent(Stream inputStream) {
             if (inputStream != null) {
                 try {
                     using (StreamReader sr = new StreamReader(inputStream)) {
                         sr.BaseStream.Position = 0;
                         Content = sr.ReadToEnd();
                     }
-                }
-                catch (IOException) {
+                } catch (IOException) {
                     Content = null;
                 }
             } else {
