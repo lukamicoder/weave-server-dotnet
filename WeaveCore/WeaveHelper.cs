@@ -36,7 +36,7 @@ namespace WeaveCore {
         }
 
         public static string ConvertToHash(string value) {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             using (var serviceProvider = new MD5CryptoServiceProvider()) {
                 byte[] data = serviceProvider.ComputeHash(Encoding.ASCII.GetBytes(value));
                 for (int i = 0; i < data.Length; i++) {

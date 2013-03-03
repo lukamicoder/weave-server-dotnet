@@ -36,7 +36,7 @@ namespace WeaveServer.Controllers {
         private long GetUserId() {
             long userId = 0;
             if (Request != null && Request.IsAuthenticated) {
-                FormsIdentity id = (FormsIdentity) HttpContext.User.Identity;
+                var id = (FormsIdentity)HttpContext.User.Identity;
                 FormsAuthenticationTicket ticket = id.Ticket;
 
                 long.TryParse(ticket.UserData, out userId);
@@ -51,16 +51,16 @@ namespace WeaveServer.Controllers {
                     return GetUserId() > 0 ? View() : Logout();
                 }
 
-                return View("Login"); 
+                return View("Login");
             }
 
             string user = form["login"];
             string pswd = form["password"];
             long userId = _weaveAdmin.AuthenticateUser(user, pswd);
             if (userId > 0) {
-                FormsAuthenticationTicket ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, userId + "");
+                var ticket = new FormsAuthenticationTicket(1, user, DateTime.Now, DateTime.Now.AddMinutes(30), false, userId + "");
                 string cookieStr = FormsAuthentication.Encrypt(ticket);
-                HttpCookie cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr) { Path = FormsAuthentication.FormsCookiePath };
+                var cookie = new HttpCookie(FormsAuthentication.FormsCookieName, cookieStr) { Path = FormsAuthentication.FormsCookiePath };
                 Response.Cookies.Add(cookie);
 
                 return RedirectToAction("Index", "Account");

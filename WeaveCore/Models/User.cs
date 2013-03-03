@@ -1,5 +1,5 @@
 ﻿namespace WeaveCore.Models {
-    public class UserResult {
+    public class User {
         public long UserId { get; set; }
         public string UserName { get; set; }
         public string Payload { get; set; }

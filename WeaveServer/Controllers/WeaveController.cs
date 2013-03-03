@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Web.Mvc;
 using WeaveCore;
 using WeaveServer.Services;
@@ -32,7 +31,7 @@ namespace WeaveServer.Controllers {
             weave.LogEvent += OnLogEvent;
 
             if (weave.Response != null && weave.Headers != null && weave.Headers.Count > 0) {
-                foreach (KeyValuePair<string, string> pair in weave.Headers) {
+                foreach (var pair in weave.Headers) {
                     Response.AppendHeader(pair.Key, pair.Value);
                 }
             }

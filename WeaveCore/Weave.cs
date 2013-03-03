@@ -26,11 +26,11 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using WeaveCore.Models;
-using WeaveCore.Storage;
+using WeaveCore.Repository;
 
 namespace WeaveCore {
     public class Weave : WeaveLogEventBase {
-        readonly WeaveStorage _db;
+        readonly DBRepository _db;
         readonly WeaveRequest _req;
 
         public Dictionary<string, string> Headers { get; private set; }
@@ -58,7 +58,7 @@ namespace WeaveCore {
             }
 
             try {
-                _db = new WeaveStorage();
+                _db = new DBRepository();
 
                 if (_db.AuthenticateUser(_req.UserName, _req.Password) == 0) {
                     Response = ReportProblem("Authentication failed", 401);
@@ -124,7 +124,6 @@ namespace WeaveCore {
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 Response = ReportProblem("Database unavailable", 503);
-                return;
             }
         }
 
@@ -134,7 +133,7 @@ namespace WeaveCore {
 
             if (_req.Id != null) {
                 try {
-                    wboList = _db.GetWboList(_req.Collection, _req.Id, true, null, null, null, null, null, null, null, null);
+                    wboList = _db.GetWboList(_req.Collection, _req.Id, true);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     Response = ReportProblem("Database unavailable", 503);
@@ -182,7 +181,7 @@ namespace WeaveCore {
                     switch (formatType) {
                         case "json":
                             sb.Append("[");
-                            foreach (WeaveBasicObject wbo in wboList) {
+                            foreach (var wbo in wboList) {
                                 if (commaFlag == 1) {
                                     sb.Append(",");
                                 } else {
@@ -198,7 +197,7 @@ namespace WeaveCore {
                             sb.Append("]");
                             break;
                         case "whoisi":
-                            foreach (WeaveBasicObject wbo in wboList) {
+                            foreach (var wbo in wboList) {
                                 string output;
                                 if (full == "1") {
                                     output = wbo.ToJson();
@@ -215,7 +214,7 @@ namespace WeaveCore {
                             }
                             break;
                         case "newlines":
-                            foreach (WeaveBasicObject wbo in wboList) {
+                            foreach (var wbo in wboList) {
                                 if (full == "1") {
                                     sb.Append(wbo.ToJson().Replace("/\n/", "\u000a"));
                                 } else {

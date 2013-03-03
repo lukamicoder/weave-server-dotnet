@@ -1,38 +1,19 @@
-﻿/* 
-Weave Server.NET <http://code.google.com/p/weave-server-dotnet/>
-Copyright (C) 2013 Karoly Lukacs
-
-Based on code created by Mozilla Labs.
- 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Data;
 using System.Linq;
 using System.Text;
 using Dapper;
 using WeaveCore.Models;
 
-namespace WeaveCore.Storage {
-    abstract class WeaveStorageBase : IWeaveStorage {
-        public string ConnString { get; set; }
-        public double TimeNow { get; set; }
+namespace WeaveCore.Repository {
+    public class DBRepository : BaseRepository {
+        double TimeNow { get; set; }
+        long UserID { get; set; }
 
-        public abstract IDbConnection GetConnection();
+        public DBRepository() {
+            InitializeDatabase();
+        }
 
         #region Admin
         public long AuthenticateUser(string userName, string password) {
@@ -56,11 +37,13 @@ namespace WeaveCore.Storage {
                 }
             }
 
+            UserID = id;
+
             return id;
         }
 
-        public IEnumerable<UserResult> GetUserList() {
-            List<UserResult> list;
+        public IEnumerable<User> GetUserList() {
+            List<User> list;
 
             const string sql = @"SELECT Users.UserId, Users.UserName, Users.Email, SUM(Wbos.PayloadSize) AS Total, MAX(Wbos.Modified) AS DateMax, MIN(Wbos.Modified) AS DateMin
 						       FROM Users
@@ -68,7 +51,7 @@ namespace WeaveCore.Storage {
 						       GROUP BY Users.UserId, Users.UserName, Users.Email";
 
             using (var conn = GetConnection()) {
-                list = conn.Query<dynamic>(sql).Select(u => new UserResult {
+                list = conn.Query<dynamic>(sql).Select(u => new User {
                     UserId = u.UserId,
                     UserName = String.IsNullOrEmpty(u.Email) ? u.UserName : u.Email,
                     Payload = WeaveHelper.FormatPayloadSize(u.Total),
@@ -80,8 +63,8 @@ namespace WeaveCore.Storage {
             return list;
         }
 
-        public IEnumerable<UserResult> GetUserSummary(long userId) {
-            List<UserResult> list;
+        public IEnumerable<User> GetUserSummary(long userId) {
+            List<User> list;
 
             const string sql = @"SELECT Users.UserName, Users.Email, SUM(Wbos.PayloadSize) AS Total, MAX(Wbos.Modified) AS DateMax, MIN(Wbos.Modified) AS DateMin
 						       FROM Users
@@ -90,7 +73,7 @@ namespace WeaveCore.Storage {
 						       GROUP BY Users.UserName, Users.Email";
 
             using (var conn = GetConnection()) {
-                list = conn.Query<dynamic>(sql, new { userId }).Select(u => new UserResult {
+                list = conn.Query<dynamic>(sql, new { userId }).Select(u => new User {
                     UserId = userId,
                     UserName = String.IsNullOrEmpty(u.Email) ? u.UserName : u.Email,
                     Payload = WeaveHelper.FormatPayloadSize(u.Total),
@@ -102,8 +85,8 @@ namespace WeaveCore.Storage {
             return list;
         }
 
-        public IEnumerable<UserDetailResult> GetUserDetails(long userId) {
-            List<UserDetailResult> list;
+        public IEnumerable<UserData> GetUserDetails(long userId) {
+            List<UserData> list;
 
             const string sql = @"SELECT Collection, COUNT(*) AS Count, SUM(Wbos.PayloadSize) AS Total
     					       FROM Wbos
@@ -113,7 +96,7 @@ namespace WeaveCore.Storage {
             using (var conn = GetConnection()) {
                 list = conn.Query<dynamic>(sql, new { userid = userId })
                     .Where(x => x.Collection != 2 && x.Collection != 5 && x.Collection != 6)
-                    .Select(item => new UserDetailResult {
+                    .Select(item => new UserData {
                         Collection = WeaveCollectionDictionary.GetValue(item.Collection),
                         Count = item.Count,
                         Payload = WeaveHelper.FormatPayloadSize(item.Total)
@@ -163,11 +146,26 @@ namespace WeaveCore.Storage {
             return result;
         }
 
-        public abstract void DeleteUser(long userId);
+        public void DeleteUser(long userId) {
+            const string sql = @"DELETE FROM Wbos WHERE UserId =  @userid;
+						         DELETE FROM Users WHERE Users.UserId = @userid";
 
-        public void ChangePassword(long userId, string password) {
+            using (var conn = GetConnection()) {
+                var transaction = conn.BeginTransaction();
+
+                conn.Execute(sql, new { userid = userId }, transaction);
+
+                transaction.Commit();
+            }
+        }
+
+        public void ChangePassword(string password, long userId = 0) {
             if (String.IsNullOrEmpty(password)) {
                 return;
+            }
+
+            if (userId == 0) {
+                userId = UserID;
             }
 
             const string sql = @"UPDATE Users SET Md5 = @md5 WHERE UserId = @userid";
@@ -187,7 +185,7 @@ namespace WeaveCore.Storage {
         #endregion
 
         #region Collection
-        public double GetMaxTimestamp(string collection, long userId) {
+        public double GetMaxTimestamp(string collection) {
             double result;
 
             if (String.IsNullOrEmpty(collection)) {
@@ -201,26 +199,14 @@ namespace WeaveCore.Storage {
 						       AND Collection = @collection";
 
             using (var conn = GetConnection()) {
-                result = conn.Query<double>(sql, new { userid = userId, ttl = TimeNow, collection = WeaveCollectionDictionary.GetKey(collection) })
+                result = conn.Query<double>(sql, new { userid = UserID, ttl = TimeNow, collection = WeaveCollectionDictionary.GetKey(collection) })
                     .SingleOrDefault();
             }
 
             return Math.Round(result, 2);
         }
 
-        public IEnumerable<string> GetCollectionList(long userId) {
-            List<string> list;
-
-            const string sql = "SELECT DISTINCT(Collection) FROM Wbos WHERE UserId = @userid";
-
-            using (var conn = GetConnection()) {
-                list = conn.Query<short>(sql, new { userid = userId }).Select(WeaveCollectionDictionary.GetValue).ToList();
-            }
-
-            return list;
-        }
-
-        public Dictionary<string, double> GetCollectionListWithTimestamps(long userId) {
+        public Dictionary<string, double> GetCollectionListWithTimestamps() {
             Dictionary<string, double> dic;
 
             const string sql = @"SELECT Collection, MAX(Modified) AS Timestamp 
@@ -229,14 +215,14 @@ namespace WeaveCore.Storage {
 						       GROUP BY Collection";
 
             using (var conn = GetConnection()) {
-                dic = conn.Query<dynamic>(sql, new { userid = userId })
+                dic = conn.Query<dynamic>(sql, new { userid = UserID })
                     .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (double)w.Timestamp);
             }
 
             return dic;
         }
 
-        public Dictionary<string, long> GetCollectionListWithCounts(long userId) {
+        public Dictionary<string, long> GetCollectionListWithCounts() {
             Dictionary<string, long> dic;
 
             const string sql = @"SELECT Collection, COUNT(*) AS Count 
@@ -246,14 +232,14 @@ namespace WeaveCore.Storage {
 						       GROUP BY Collection";
 
             using (var conn = GetConnection()) {
-                dic = conn.Query<dynamic>(sql, new { userid = userId, ttl = TimeNow })
+                dic = conn.Query<dynamic>(sql, new { userid = UserID, ttl = TimeNow })
                     .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (long)w.Count);
             }
 
             return dic;
         }
 
-        public double GetStorageTotal(long userId) {
+        public double GetStorageTotal() {
             long result;
 
             const string sql = @"SELECT SUM(Wbos.PayloadSize) 
@@ -263,13 +249,13 @@ namespace WeaveCore.Storage {
                                AND Ttl > @ttl";
 
             using (var conn = GetConnection()) {
-                result = conn.Query<long>(sql, new { userid = userId, ttl = TimeNow }).SingleOrDefault();
+                result = conn.Query<long>(sql, new { userid = UserID, ttl = TimeNow }).SingleOrDefault();
             }
 
             return Convert.ToDouble(result / 1024);
         }
 
-        public Dictionary<string, int> GetCollectionStorageTotals(long userId) {
+        public Dictionary<string, int> GetCollectionStorageTotals() {
             Dictionary<string, int> dic;
 
             const string sql = @"SELECT Collection, SUM(PayloadSize) AS Total
@@ -279,7 +265,7 @@ namespace WeaveCore.Storage {
 						       GROUP BY Collection";
 
             using (var conn = GetConnection()) {
-                dic = conn.Query<dynamic>(sql, new { userid = userId, ttl = TimeNow })
+                dic = conn.Query<dynamic>(sql, new { userid = UserID, ttl = TimeNow })
                     .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (int)w.Total / 1024);
             }
 
@@ -288,23 +274,94 @@ namespace WeaveCore.Storage {
         #endregion
 
         #region Wbo
-        public abstract void SaveWbo(WeaveBasicObject wbo, long userId);
+        public void SaveWbo(WeaveBasicObject wbo) {
+            string sql;
 
-        public abstract void SaveWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList, long userId);
+            if (DatabaseType == DatabaseType.SQLServer) {
+                sql = @"UPDATE Wbos
+                    SET SortIndex = @sortindex, 
+                        Modified = @modified, 
+                        Payload = @payload, 
+                        PayloadSize = @payloadsize, 
+                        Ttl = @ttl
+                    WHERE UserID = @userid
+                        AND Id = @id
+                        AND Collection = @collection
+                    IF (@@ROWCOUNT = 0)
+                    BEGIN
+	                    INSERT INTO Wbos (UserId, Id, Collection, SortIndex, Modified, Payload, PayloadSize, Ttl) 
+				        VALUES (@userid, @id, @collection, @sortindex, @modified, @payload, @payloadsize, @ttl)
+                    END";
+            } else {
+                sql = @"REPLACE INTO Wbos (UserId, Id, Collection, SortIndex, Modified, Payload, PayloadSize, Ttl) 
+				    VALUES (@userid, @id, @collection, @sortindex, @modified, @payload, @payloadsize, @ttl)";
+            }
 
-        public void DeleteWbo(string id, string collection, long userId) {
+            wbo.UserId = UserID;
+            using (var conn = GetConnection()) {
+                conn.Execute(sql, wbo);
+            }
+        }
+
+        public void SaveWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList) {
+            if (wboList == null || wboList.Count <= 0) {
+                return;
+            }
+
+            string sql;
+
+            if (DatabaseType == DatabaseType.SQLServer) {
+                sql = @"UPDATE Wbos
+                    SET SortIndex = @sortindex, 
+                        Modified = @modified, 
+                        Payload = @payload, 
+                        PayloadSize = @payloadsize, 
+                        Ttl = @ttl
+                    WHERE UserID = @userid
+                        AND Id = @id
+                        AND Collection = @collection
+                    IF (@@ROWCOUNT = 0)
+                    BEGIN
+	                    INSERT INTO Wbos (UserId, Id, Collection, SortIndex, Modified, Payload, PayloadSize, Ttl) 
+				        VALUES (@userid, @id, @collection, @sortindex, @modified, @payload, @payloadsize, @ttl)
+                    END";
+            } else {
+                sql = @"REPLACE INTO Wbos (UserId, Id, Collection, SortIndex, Modified, Payload, PayloadSize, Ttl) 
+				    VALUES (@userid, @id, @collection, @sortindex, @modified, @payload, @payloadsize, @ttl)";
+            }
+
+            using (var conn = GetConnection()) {
+                var transaction = conn.BeginTransaction();
+
+                foreach (var wbo in wboList) {
+                    wbo.UserId = UserID;
+                    try {
+                        conn.Execute(sql, wbo, transaction);
+                        resultList.SuccessIds.Add(wbo.Id);
+                    } catch (Exception e) {
+                        if (wbo.Id != null) {
+                            resultList.FailedIds[wbo.Id] = new Collection<string> { e.Message };
+                        }
+                    }
+                }
+
+                transaction.Commit();
+            }
+        }
+
+        public void DeleteWbo(string id, string collection) {
             const string sql = @"DELETE FROM Wbos
 						       WHERE UserId = @userid
 						       AND Collection = @collection 
 						       AND Id = @id";
 
             using (var conn = GetConnection()) {
-                conn.Execute(sql, new { userid = userId, id = id, collection = WeaveCollectionDictionary.GetKey(collection) });
+                conn.Execute(sql, new { userid = UserID, id = id, collection = WeaveCollectionDictionary.GetKey(collection) });
             }
         }
 
         public void DeleteWboList(string collection, string id, string newer, string older, string sort,
-                                  string limit, string offset, string ids, string indexAbove, string indexBelow, long userId) {
+                                  string limit, string offset, string ids, string indexAbove, string indexBelow) {
             StringBuilder sb = new StringBuilder();
 
             using (var conn = GetConnection()) {
@@ -313,11 +370,11 @@ namespace WeaveCore.Storage {
 							AND Collection = @collection");
 
                 var param = new DynamicParameters();
-                param.Add("UserId", userId);
+                param.Add("UserId", UserID);
                 param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
 
                 if (limit != null || offset != null || sort != null) {
-                    IList<WeaveBasicObject> wboList = GetWboList(collection, id, false, newer, older, sort, limit, offset, ids, indexAbove, indexBelow, userId);
+                    IList<WeaveBasicObject> wboList = GetWboList(collection, id, false, newer, older, sort, limit, offset, ids, indexAbove, indexBelow);
                     if (wboList.Count > 0) {
                         sb.Append(" AND Id IN (@ids)");
                         var idArray = new string[wboList.Count];
@@ -362,7 +419,7 @@ namespace WeaveCore.Storage {
             }
         }
 
-        public WeaveBasicObject GetWbo(string collection, string id, long userId) {
+        public WeaveBasicObject GetWbo(string collection, string id) {
             WeaveBasicObject wbo;
 
             const string sql = @"SELECT * FROM Wbos 
@@ -372,15 +429,92 @@ namespace WeaveCore.Storage {
                                AND Ttl > @ttl";
 
             using (var conn = GetConnection()) {
-                wbo = conn.Query<WeaveBasicObject>(sql, new { userid = userId, ttl = TimeNow, collection = WeaveCollectionDictionary.GetKey(collection), id = id })
+                wbo = conn.Query<WeaveBasicObject>(sql, new { userid = UserID, ttl = TimeNow, collection = WeaveCollectionDictionary.GetKey(collection), id = id })
                     .SingleOrDefault();
             }
 
             return wbo;
         }
 
-        public abstract IList<WeaveBasicObject> GetWboList(string collection, string id, bool full, string newer, string older, string sort, string limit, string offset,
-                                                       string ids, string indexAbove, string indexBelow, long userId);
+        public IList<WeaveBasicObject> GetWboList(string collection, string id, bool full, string newer = null, string older = null, string sort = null, string limit = null, string offset = null,
+                                                       string ids = null, string indexAbove = null, string indexBelow = null) {
+            List<WeaveBasicObject> wboList;
+            var sb = new StringBuilder();
+
+            using (var conn = GetConnection()) {
+                if (DatabaseType == DatabaseType.SQLServer) {
+                    sb.Append("SELECT ");
+
+                    if (limit != null) {
+                        sb.Append(" TOP(").Append(limit).Append(") ");
+                    }
+
+                    sb.Append(full ? "*" : "Id").Append(" FROM Wbos WHERE UserId = @userid AND Collection = @collection AND Ttl > @ttl");
+                } else {
+                    sb.Append("SELECT ").Append(full ? "*" : "Id").Append(" FROM Wbos WHERE UserId = @userid AND Collection = @collection AND Ttl > @ttl");
+                }
+
+                var param = new DynamicParameters();
+                param.Add("UserId", UserID);
+                param.Add("Ttl", TimeNow);
+                param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
+
+                if (id != null) {
+                    sb.Append(" AND Id = @id");
+                    param.Add("Id", id);
+                }
+
+                if (ids != null) {
+                    sb.Append(" AND Id IN (@ids)");
+                    param.Add("Ids", ids.Split(new[] { ',' }));
+                }
+
+                if (indexAbove != null) {
+                    sb.Append("AND SortIndex > @indexAbove");
+                    param.Add("IndexAbove", Convert.ToInt64(indexAbove));
+                }
+
+                if (indexBelow != null) {
+                    sb.Append(" AND SortIndex < @indexBelow");
+                    param.Add("IndexBelow", Convert.ToInt64(indexBelow));
+                }
+
+                if (newer != null) {
+                    sb.Append(" AND Modified > @newer");
+                    param.Add("Newer", Convert.ToDouble(newer));
+                }
+
+                if (older != null) {
+                    sb.Append(" AND Modified < @older");
+                    param.Add("Older", Convert.ToDouble(older));
+                }
+
+                switch (sort) {
+                    case "index":
+                        sb.Append(" ORDER BY SortIndex DESC");
+                        break;
+                    case "newest":
+                        sb.Append(" ORDER BY Modified DESC");
+                        break;
+                    case "oldest":
+                        sb.Append(" ORDER BY Modified");
+                        break;
+                }
+
+                if (DatabaseType != DatabaseType.SQLServer) {
+                    if (limit != null) {
+                        sb.Append(" LIMIT ").Append(limit);
+                        if (offset != null) {
+                            sb.Append(" OFFSET ").Append(offset);
+                        }
+                    }
+                }
+
+                wboList = conn.Query<WeaveBasicObject>(sb.ToString(), param).ToList();
+            }
+
+            return wboList;
+        }
         #endregion
     }
 }

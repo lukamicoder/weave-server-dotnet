@@ -20,14 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using System;
 using Newtonsoft.Json;
-using WeaveCore.Storage;
+using WeaveCore.Repository;
 
 namespace WeaveCore {
     public class WeaveAdmin : WeaveLogEventBase {
-        readonly WeaveStorage _db;
+        readonly DBRepository _db;
 
         public WeaveAdmin() {
-            _db = new WeaveStorage();
+            _db = new DBRepository();
         }
 
         public long AuthenticateUser(string userName, string password) {
@@ -110,7 +110,7 @@ namespace WeaveCore {
 
         public string ChangePassword(long userId, string password) {
             try {
-                _db.ChangePassword(userId, password);
+                _db.ChangePassword(password, userId);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);
