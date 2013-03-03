@@ -42,7 +42,7 @@ namespace WeaveCore.Repository {
                 } else {
                     var connections = ConfigurationManager.ConnectionStrings;
                     for (int x = 0; x < connections.Count; x++) {
-                        if (connections[x].Name == "ExpenseDB") {
+                        if (connections[x].Name == "Weave") {
                             ConnString = connections[x].ConnectionString;
                             break;
                         }
