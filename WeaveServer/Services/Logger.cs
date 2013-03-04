@@ -22,7 +22,7 @@ using System;
 using System.Configuration;
 using System.Diagnostics;
 using System.Security;
-using WeaveCore;
+using WeaveCore.Models;
 
 namespace WeaveServer.Services {
     static class Logger {

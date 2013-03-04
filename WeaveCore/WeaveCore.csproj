@@ -57,8 +57,7 @@
     <Compile Include="Models\UserData.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WeaveResultList.cs" />
-    <Compile Include="Repository\BaseRepository.cs" />
-    <Compile Include="Repository\DBRepository.cs" />
+    <Compile Include="DBRepository.cs" />
     <Compile Include="WeaveConfigurationSection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Models\WeaveCollectionDictionary.cs" />
@@ -66,10 +65,9 @@
     <Compile Include="WeaveAdmin.cs" />
     <Compile Include="Models\WeaveBasicObject.cs" />
     <Compile Include="Models\Enums.cs" />
-    <Compile Include="WeaveLogEventArgs.cs" />
-    <Compile Include="WeaveLogEventBase.cs" />
+    <Compile Include="LogEventBase.cs" />
     <Compile Include="WeaveRequest.cs" />
-    <Compile Include="WeaveHelper.cs" />
+    <Compile Include="Helper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">
@@ -77,8 +75,8 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Repository\MySQL.sql" />
-    <Content Include="Repository\SQLServer.sql" />
+    <Content Include="Scripts\MySQL.sql" />
+    <Content Include="Scripts\SQLServer.sql" />
     <Content Include="x64\SQLite.Interop.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

@@ -116,7 +116,7 @@ namespace WeaveServer.Controllers {
             return View("PageNotFound");
         }
 
-        private void OnLogEvent(object source, WeaveLogEventArgs args) {
+        private void OnLogEvent(object source, LogEventArgs args) {
             Logger.WriteMessage(args.Message, args.Type);
         }
     }

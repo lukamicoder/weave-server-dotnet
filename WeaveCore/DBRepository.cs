@@ -1,18 +1,108 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Configuration;
+using System.Data;
+using System.Data.SQLite;
+using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Dapper;
+using MySql.Data.MySqlClient;
 using WeaveCore.Models;
 
-namespace WeaveCore.Repository {
-    public class DBRepository : BaseRepository {
-        double TimeNow { get; set; }
-        long UserID { get; set; }
+namespace WeaveCore {
+    public class DBRepository {
+        private readonly double _timeNow;
+        private string _connString;
+        private long _userID;
+        private DatabaseType _databaseType;
+        private readonly object _lock = new object();
 
         public DBRepository() {
-            InitializeDatabase();
+            if (string.IsNullOrEmpty(_connString) || _databaseType == DatabaseType.NA) {
+                _databaseType = ((WeaveConfigurationSection)ConfigurationManager.GetSection("WeaveDatabase")).DatabaseType;
+
+                if (_databaseType == DatabaseType.SQLite) {
+                    string dir = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
+
+                    if (string.IsNullOrEmpty(dir)) {
+                        dir = AppDomain.CurrentDomain.BaseDirectory;
+                    }
+
+                    string dbName = dir + Path.DirectorySeparatorChar + "weave.db";
+
+                    _connString = "Data Source=" + dbName + ";";
+
+                    lock (_lock) {
+                        var dbFile = new FileInfo(dbName);
+                        if (dbFile.Exists) {
+                            return;
+                        }
+
+                        SQLiteConnection.CreateFile(dbName);
+                        CreateSQLiteTables();
+                    }
+                } else {
+                    var connections = ConfigurationManager.ConnectionStrings;
+                    for (int x = 0; x < connections.Count; x++) {
+                        if (connections[x].Name == "Weave") {
+                            _connString = connections[x].ConnectionString;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+            _timeNow = Math.Round(ts.TotalSeconds, 2);
+        }
+
+        private void CreateSQLiteTables() {
+            const string sql = @"
+				  BEGIN TRANSACTION;
+				  CREATE TABLE Wbos (UserId integer NOT NULL,
+									Id varchar(64) NOT NULL,
+									Collection smallint NOT NULL,
+									Modified double NULL,
+									SortIndex integer NULL,
+									Payload text NULL,
+									PayloadSize integer NULL,
+									Ttl double NULL,
+									primary key (UserId, Collection, Id));				
+				  CREATE TABLE Users (UserId integer NOT NULL PRIMARY KEY AUTOINCREMENT, 
+									  UserName varchar(32) NOT NULL, 
+									  Md5 varchar(128) NOT NULL, 
+									  Email varchar(64) NULL);
+				  CREATE INDEX modifiedindex ON Wbos (UserId, Collection, Modified);
+				  END TRANSACTION;";
+
+            using (var conn = GetConnection()) {
+                conn.Execute(sql);
+            }
+
+        }
+
+        private IDbConnection GetConnection() {
+            IDbConnection connection = null;
+
+            switch (_databaseType) {
+                case DatabaseType.SQLite:
+                    connection = new SQLiteConnection(_connString);
+                    connection.Open();
+                    break;
+                case DatabaseType.SQLServer:
+                    connection = new SqlConnection(_connString);
+                    connection.Open();
+                    break;
+                case DatabaseType.MySQL:
+                    connection = new MySqlConnection(_connString);
+                    connection.Open();
+                    break;
+            }
+
+            return connection;
         }
 
         #region Admin
@@ -31,13 +121,13 @@ namespace WeaveCore.Repository {
             }
 
             using (var conn = GetConnection()) {
-                var result = conn.Query<long?>(sql, new { username = userName, md5 = WeaveHelper.ConvertToHash(password) }).SingleOrDefault();
+                var result = conn.Query<long?>(sql, new { username = userName, md5 = Helper.ConvertToHash(password) }).SingleOrDefault();
                 if (result != null) {
                     id = result.Value;
                 }
             }
 
-            UserID = id;
+            _userID = id;
 
             return id;
         }
@@ -54,7 +144,7 @@ namespace WeaveCore.Repository {
                 list = conn.Query<dynamic>(sql).Select(u => new User {
                     UserId = u.UserId,
                     UserName = String.IsNullOrEmpty(u.Email) ? u.UserName : u.Email,
-                    Payload = WeaveHelper.FormatPayloadSize(u.Total),
+                    Payload = Helper.FormatPayloadSize(u.Total),
                     DateMin = u.DateMin == null ? 0 : u.DateMin * 1000,
                     DateMax = u.DateMax == null ? 0 : u.DateMax * 1000
                 }).ToList();
@@ -76,7 +166,7 @@ namespace WeaveCore.Repository {
                 list = conn.Query<dynamic>(sql, new { userId }).Select(u => new User {
                     UserId = userId,
                     UserName = String.IsNullOrEmpty(u.Email) ? u.UserName : u.Email,
-                    Payload = WeaveHelper.FormatPayloadSize(u.Total),
+                    Payload = Helper.FormatPayloadSize(u.Total),
                     DateMin = u.DateMin == null ? 0 : u.DateMin * 1000,
                     DateMax = u.DateMax == null ? 0 : u.DateMax * 1000
                 }).ToList();
@@ -99,7 +189,7 @@ namespace WeaveCore.Repository {
                     .Select(item => new UserData {
                         Collection = WeaveCollectionDictionary.GetValue(item.Collection),
                         Count = item.Count,
-                        Payload = WeaveHelper.FormatPayloadSize(item.Total)
+                        Payload = Helper.FormatPayloadSize(item.Total)
                     }).ToList();
             }
 
@@ -114,7 +204,7 @@ namespace WeaveCore.Repository {
             const string sql = "INSERT INTO Users (UserName, Email, Md5) VALUES (@userName, @email, @md5)";
 
             using (var conn = GetConnection()) {
-                conn.Execute(sql, new { userName, email, md5 = WeaveHelper.ConvertToHash(password) });
+                conn.Execute(sql, new { userName, email, md5 = Helper.ConvertToHash(password) });
             }
         }
 
@@ -165,13 +255,13 @@ namespace WeaveCore.Repository {
             }
 
             if (userId == 0) {
-                userId = UserID;
+                userId = _userID;
             }
 
             const string sql = @"UPDATE Users SET Md5 = @md5 WHERE UserId = @userid";
 
             using (var conn = GetConnection()) {
-                conn.Execute(sql, new { md5 = WeaveHelper.ConvertToHash(password), userid = userId });
+                conn.Execute(sql, new { md5 = Helper.ConvertToHash(password), userid = userId });
             }
         }
 
@@ -199,7 +289,7 @@ namespace WeaveCore.Repository {
 						       AND Collection = @collection";
 
             using (var conn = GetConnection()) {
-                result = conn.Query<double>(sql, new { userid = UserID, ttl = TimeNow, collection = WeaveCollectionDictionary.GetKey(collection) })
+                result = conn.Query<double>(sql, new { userid = _userID, ttl = _timeNow, collection = WeaveCollectionDictionary.GetKey(collection) })
                     .SingleOrDefault();
             }
 
@@ -215,7 +305,7 @@ namespace WeaveCore.Repository {
 						       GROUP BY Collection";
 
             using (var conn = GetConnection()) {
-                dic = conn.Query<dynamic>(sql, new { userid = UserID })
+                dic = conn.Query<dynamic>(sql, new { userid = _userID })
                     .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (double)w.Timestamp);
             }
 
@@ -232,7 +322,7 @@ namespace WeaveCore.Repository {
 						       GROUP BY Collection";
 
             using (var conn = GetConnection()) {
-                dic = conn.Query<dynamic>(sql, new { userid = UserID, ttl = TimeNow })
+                dic = conn.Query<dynamic>(sql, new { userid = _userID, ttl = _timeNow })
                     .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (long)w.Count);
             }
 
@@ -249,7 +339,7 @@ namespace WeaveCore.Repository {
                                AND Ttl > @ttl";
 
             using (var conn = GetConnection()) {
-                result = conn.Query<long>(sql, new { userid = UserID, ttl = TimeNow }).SingleOrDefault();
+                result = conn.Query<long>(sql, new { userid = _userID, ttl = _timeNow }).SingleOrDefault();
             }
 
             return Convert.ToDouble(result / 1024);
@@ -265,7 +355,7 @@ namespace WeaveCore.Repository {
 						       GROUP BY Collection";
 
             using (var conn = GetConnection()) {
-                dic = conn.Query<dynamic>(sql, new { userid = UserID, ttl = TimeNow })
+                dic = conn.Query<dynamic>(sql, new { userid = _userID, ttl = _timeNow })
                     .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (int)w.Total / 1024);
             }
 
@@ -277,7 +367,7 @@ namespace WeaveCore.Repository {
         public void SaveWbo(WeaveBasicObject wbo) {
             string sql;
 
-            if (DatabaseType == DatabaseType.SQLServer) {
+            if (_databaseType == DatabaseType.SQLServer) {
                 sql = @"UPDATE Wbos
                     SET SortIndex = @sortindex, 
                         Modified = @modified, 
@@ -297,7 +387,7 @@ namespace WeaveCore.Repository {
 				    VALUES (@userid, @id, @collection, @sortindex, @modified, @payload, @payloadsize, @ttl)";
             }
 
-            wbo.UserId = UserID;
+            wbo.UserId = _userID;
             using (var conn = GetConnection()) {
                 conn.Execute(sql, wbo);
             }
@@ -310,7 +400,7 @@ namespace WeaveCore.Repository {
 
             string sql;
 
-            if (DatabaseType == DatabaseType.SQLServer) {
+            if (_databaseType == DatabaseType.SQLServer) {
                 sql = @"UPDATE Wbos
                     SET SortIndex = @sortindex, 
                         Modified = @modified, 
@@ -334,7 +424,7 @@ namespace WeaveCore.Repository {
                 var transaction = conn.BeginTransaction();
 
                 foreach (var wbo in wboList) {
-                    wbo.UserId = UserID;
+                    wbo.UserId = _userID;
                     try {
                         conn.Execute(sql, wbo, transaction);
                         resultList.SuccessIds.Add(wbo.Id);
@@ -356,7 +446,7 @@ namespace WeaveCore.Repository {
 						       AND Id = @id";
 
             using (var conn = GetConnection()) {
-                conn.Execute(sql, new { userid = UserID, id = id, collection = WeaveCollectionDictionary.GetKey(collection) });
+                conn.Execute(sql, new { userid = _userID, id = id, collection = WeaveCollectionDictionary.GetKey(collection) });
             }
         }
 
@@ -370,7 +460,7 @@ namespace WeaveCore.Repository {
 							AND Collection = @collection");
 
                 var param = new DynamicParameters();
-                param.Add("UserId", UserID);
+                param.Add("UserId", _userID);
                 param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
 
                 if (limit != null || offset != null || sort != null) {
@@ -429,7 +519,7 @@ namespace WeaveCore.Repository {
                                AND Ttl > @ttl";
 
             using (var conn = GetConnection()) {
-                wbo = conn.Query<WeaveBasicObject>(sql, new { userid = UserID, ttl = TimeNow, collection = WeaveCollectionDictionary.GetKey(collection), id = id })
+                wbo = conn.Query<WeaveBasicObject>(sql, new { userid = _userID, ttl = _timeNow, collection = WeaveCollectionDictionary.GetKey(collection), id = id })
                     .SingleOrDefault();
             }
 
@@ -442,7 +532,7 @@ namespace WeaveCore.Repository {
             var sb = new StringBuilder();
 
             using (var conn = GetConnection()) {
-                if (DatabaseType == DatabaseType.SQLServer) {
+                if (_databaseType == DatabaseType.SQLServer) {
                     sb.Append("SELECT ");
 
                     if (limit != null) {
@@ -455,8 +545,8 @@ namespace WeaveCore.Repository {
                 }
 
                 var param = new DynamicParameters();
-                param.Add("UserId", UserID);
-                param.Add("Ttl", TimeNow);
+                param.Add("UserId", _userID);
+                param.Add("Ttl", _timeNow);
                 param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
 
                 if (id != null) {
@@ -501,7 +591,7 @@ namespace WeaveCore.Repository {
                         break;
                 }
 
-                if (DatabaseType != DatabaseType.SQLServer) {
+                if (_databaseType != DatabaseType.SQLServer) {
                     if (limit != null) {
                         sb.Append(" LIMIT ").Append(limit);
                         if (offset != null) {

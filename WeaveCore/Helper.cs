@@ -24,7 +24,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace WeaveCore {
-    static class WeaveHelper {
+    static class Helper {
         public static bool IsUserNameValid(string text) {
             var regex = new Regex(@"[^a-zA-Z0-9._-]");
             

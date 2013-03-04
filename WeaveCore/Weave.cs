@@ -26,10 +26,9 @@ using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using WeaveCore.Models;
-using WeaveCore.Repository;
 
 namespace WeaveCore {
-    public class Weave : WeaveLogEventBase {
+    public class Weave : LogEventBase {
         readonly DBRepository _db;
         readonly WeaveRequest _req;
 

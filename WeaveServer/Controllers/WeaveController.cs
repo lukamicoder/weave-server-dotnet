@@ -44,7 +44,7 @@ namespace WeaveServer.Controllers {
             return Content(weave.Response);
         }
 
-        private void OnLogEvent(object source, WeaveLogEventArgs args) {
+        private void OnLogEvent(object source, LogEventArgs args) {
             Logger.WriteMessage(args.Message, args.Type);
         }
     }

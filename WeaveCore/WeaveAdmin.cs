@@ -20,10 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using System;
 using Newtonsoft.Json;
-using WeaveCore.Repository;
+using WeaveCore.Models;
 
 namespace WeaveCore {
-    public class WeaveAdmin : WeaveLogEventBase {
+    public class WeaveAdmin : LogEventBase {
         readonly DBRepository _db;
 
         public WeaveAdmin() {
@@ -68,7 +68,7 @@ namespace WeaveCore {
             string msg = "";
             if (String.IsNullOrEmpty(userName) || String.IsNullOrEmpty(password)) {
                 msg = "Username and password cannot be blank.";
-            } else if (!userName.Contains("@") && !WeaveHelper.IsUserNameValid(userName)) {
+            } else if (!userName.Contains("@") && !Helper.IsUserNameValid(userName)) {
                 msg = "Username can only consist of characters (A-Z or a-z), numbers (0-9), and these special characters: _ -.";
             } else if (!IsUserNameUnique(userName)) {
                 msg = "Username already exists.";
