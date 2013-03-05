@@ -14,10 +14,11 @@ using WeaveCore.Models;
 
 namespace WeaveCore {
     public class DBRepository {
+        private static string _connString;
+        private static DatabaseType _databaseType;
+
         private readonly double _timeNow;
-        private string _connString;
         private long _userID;
-        private DatabaseType _databaseType;
         private readonly object _lock = new object();
 
         public DBRepository() {
