@@ -23,6 +23,7 @@ $(document).ready(function () {
 
     $('#dialog').dialog({
         modal: true,
+        dialogClass: "no-close",
         autoOpen: false,
         height: 'auto',
         minHeight: 33,
@@ -94,12 +95,11 @@ function openDialog(type, value, value2) {
 }
 
 function showDetails(userid, username) {
-    var param = [{ name: 'userId', value: userid}];
 
     $.ajax({
         url: "/Admin/GetUserDetails",
         cache: false,
-        data: param,
+        data: [{ name: 'userId', value: userid }],
         type: 'POST',
         dataType: 'json',
         success: function (data) {

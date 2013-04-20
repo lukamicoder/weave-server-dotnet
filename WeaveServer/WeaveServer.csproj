@@ -103,8 +103,8 @@
     <Content Include="Scripts\account.js" />
     <Content Include="Scripts\admin.js" />
     <Content Include="Scripts\helper.js" />
-    <Content Include="Scripts\jquery-1.8.2_min.js" />
-    <Content Include="Scripts\jquery-ui-1.9.1.custom.min.js" />
+    <Content Include="Scripts\jquery-1.9.1_min.js" />
+    <Content Include="Scripts\jquery-ui-1.10.2.custom.min.js" />
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Shared\PageNotFound.cshtml" />
     <Content Include="Web.config">

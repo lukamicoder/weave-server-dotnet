@@ -19,10 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
 using WeaveCore;
+using WeaveCore.Models;
 using WeaveServer.Services;
 
 namespace WeaveServer.Controllers {
@@ -73,17 +75,13 @@ namespace WeaveServer.Controllers {
         }
 
         [HttpPost]
-        public ContentResult GetUserSummary() {
-            string output = _weaveAdmin.GetUserSummary(GetUserId());
-
-            return Content(output);
+        public JsonResult GetUserSummary() {
+            return Json(_weaveAdmin.GetUser(GetUserId()));
         }
 
         [HttpPost]
-        public ContentResult GetUserDetails() {
-            string output = _weaveAdmin.GetUserDetails(GetUserId());
-
-            return Content(output);
+        public JsonResult GetUserDetails() {
+            return Json(_weaveAdmin.GetUserDetails(GetUserId()));
         }
 
         [HttpPost]

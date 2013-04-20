@@ -40,9 +40,9 @@ namespace WeaveServer.Controllers {
                     FormsAuthenticationTicket ticket = id.Ticket;
 
                     return ticket.UserData == "Admin" ? View() : Logout();
-                } 
-                
-                return View("Login");  
+                }
+
+                return View("Login");
             }
 
             string user = form["login"];
@@ -61,15 +61,14 @@ namespace WeaveServer.Controllers {
 
             return View("Login");
         }
-        
-        [HttpPost]
-        public ContentResult GetUserList() {
-            return Content(_weaveAdmin.GetUserList());
-        }
 
         [HttpPost]
-        public ContentResult GetUserDetails(int userId) {
-            return Content(_weaveAdmin.GetUserDetails(userId));
+        public JsonResult GetUserList() {
+            return Json(_weaveAdmin.GetUserList());
+        }
+
+        public JsonResult GetUserDetails(int userId) {
+            return Json(_weaveAdmin.GetUserDetails(userId));
         }
 
         [HttpPost]

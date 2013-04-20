@@ -55,3 +55,4 @@ body { font-family: arial,helvetica,sans; background-color: #464646; font-size: 
 .ui-dialog .ui-dialog-buttonpane { border-width: 1px 0 0 0; }
 .ui-dialog .ui-dialog-buttonpane button { float: right; margin: .4em .3em .4em 0; cursor: pointer; padding: 2px; width: 70px; overflow: visible; }
 .ui-draggable .ui-dialog-titlebar { cursor: move; }
+.no-close .ui-dialog-titlebar-close { display: none; }

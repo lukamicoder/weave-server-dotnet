@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
-using Newtonsoft.Json;
+using System.Collections.Generic;
 using WeaveCore.Models;
 
 namespace WeaveCore {
@@ -34,34 +34,38 @@ namespace WeaveCore {
             return _db.AuthenticateUser(userName, password);
         }
 
-        public string GetUserList() {
+        public IEnumerable<User> GetUserList() {
+            IEnumerable<User> list = null;
             try {
-                var list = _db.GetUserList();
-                return JsonConvert.SerializeObject(list);
+                list = _db.GetUserList();
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
-                return String.Format("Error: {0}", x.Message);
             }
+
+            return list;
         }
 
-        public string GetUserSummary(long userId) {
+        public User GetUser(long userId) {
+            User user = null;
             try {
-                var list = _db.GetUserSummary(userId);
-                return JsonConvert.SerializeObject(list);
+                user = _db.GetUser(userId);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
-                return String.Format("Error: {0}", x.Message);
             }
+
+            return user;
         }
 
-        public string GetUserDetails(long userId) {
+        public IEnumerable<CollectionData> GetUserDetails(long userId) {
+            IEnumerable<CollectionData> list = null;
+
             try {
-                var list = _db.GetUserDetails(userId);
-                return JsonConvert.SerializeObject(list);
+                list = _db.GetUserDetails(userId);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
-                return String.Format("Error: {0}", x.Message);
             }
+
+            return list;
         }
 
         public string CreateUser(string userName, string password, string email) {

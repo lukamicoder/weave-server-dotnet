@@ -196,53 +196,44 @@ function loadUserTable() {
         cache: false,
         type: 'POST',
         dataType: 'json',
-        success: function (users) {
+        success: function (user) {
             var rows = new Array();
-            if (users !== undefined) {
-                if (users.length == 0) {
-                    row = ["&nbsp;", "", "", "", ""];
-                    rows.push(row);
-                } else {
-                    for (var i = 0; i < users.length; i++) {
-                        if (users[i] !== null) {
-                            var id = users[i].UserId;
-                            var size = users[i].Payload;
+            var row = ["&nbsp;", "", "", "", ""];
+            
+            if (user !== undefined && user !== null) {
+                var size = user.Payload;
 
-                            var datemin = "";
-                            if (users[i].DateMin > 0) {
-                                datemin = new Date(users[i].DateMin);
-                                datemin = datemin.format();
-                            }
-
-                            var datemax = "";
-                            if (users[i].DateMax > 0) {
-                                datemax = new Date(users[i].DateMax);
-                                datemax = datemax.format();
-                            }
-
-                            var detail = ""; ;
-                            if (datemax !== "") {
-                                detail = document.createElement("a");
-                                $(detail).attr('href', "javascript:showDetails()");
-                                $(detail).append(document.createTextNode('details'));
-                            }
-
-                            var clear = "&nbsp;";
-                            if (datemax !== "") {
-                                clear = document.createElement("a");
-                                $(clear).attr('href', "javascript:openDialog('clear');");
-                                $(clear).append(document.createTextNode('clear'));
-                            }
-
-                            row = [size, datemin, datemax, detail, clear];
-                        } else {
-                            var row = ["&nbsp;", "", "", "", ""];
-                        }
-
-                        rows.push(row);
-                    }
+                var datemin = "";
+                if (user.DateMin > 0) {
+                    datemin = new Date(user.DateMin);
+                    datemin = datemin.format();
                 }
-            }
+
+                var datemax = "";
+                if (user.DateMax > 0) {
+                    datemax = new Date(user.DateMax);
+                    datemax = datemax.format();
+                }
+
+                var detail = "";
+                
+                if (datemax !== "") {
+                    detail = document.createElement("a");
+                    $(detail).attr('href', "javascript:showDetails()");
+                    $(detail).append(document.createTextNode('details'));
+                }
+
+                var clear = "&nbsp;";
+                if (datemax !== "") {
+                    clear = document.createElement("a");
+                    $(clear).attr('href', "javascript:openDialog('clear');");
+                    $(clear).append(document.createTextNode('clear'));
+                }
+
+                row = [size, datemin, datemax, detail, clear];
+            } 
+
+            rows.push(row);
 
             userTable.loadData(rows);
         },

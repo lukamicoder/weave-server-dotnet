@@ -154,30 +154,30 @@ namespace WeaveCore {
             return list;
         }
 
-        public IEnumerable<User> GetUserSummary(long userId) {
-            List<User> list;
+        public User GetUser(long userId) {
+            User user;
 
             const string sql = @"SELECT Users.UserName, Users.Email, SUM(Wbos.PayloadSize) AS Total, MAX(Wbos.Modified) AS DateMax, MIN(Wbos.Modified) AS DateMin
 						       FROM Users
 						       LEFT JOIN Wbos ON Users.UserId = Wbos.UserId
-                               Where Users.UserId = @userId
+                               WHERE Users.UserId = @userId
 						       GROUP BY Users.UserName, Users.Email";
 
             using (var conn = GetConnection()) {
-                list = conn.Query<dynamic>(sql, new { userId }).Select(u => new User {
+                user = conn.Query<dynamic>(sql, new { userId }).Select(u => new User {
                     UserId = userId,
                     UserName = String.IsNullOrEmpty(u.Email) ? u.UserName : u.Email,
                     Payload = Helper.FormatPayloadSize(u.Total),
                     DateMin = u.DateMin == null ? 0 : u.DateMin * 1000,
                     DateMax = u.DateMax == null ? 0 : u.DateMax * 1000
-                }).ToList();
+                }).SingleOrDefault();
             }
 
-            return list;
+            return user;
         }
 
-        public IEnumerable<UserData> GetUserDetails(long userId) {
-            List<UserData> list;
+        public IEnumerable<CollectionData> GetUserDetails(long userId) {
+            List<CollectionData> list;
 
             const string sql = @"SELECT Collection, COUNT(*) AS Count, SUM(Wbos.PayloadSize) AS Total
     					       FROM Wbos
@@ -187,8 +187,8 @@ namespace WeaveCore {
             using (var conn = GetConnection()) {
                 list = conn.Query<dynamic>(sql, new { userid = userId })
                     .Where(x => x.Collection != 2 && x.Collection != 5 && x.Collection != 6)
-                    .Select(item => new UserData {
-                        Collection = WeaveCollectionDictionary.GetValue(item.Collection),
+                    .Select(item => new CollectionData {
+                        Collection = CollectionDictionary.GetValue(item.Collection),
                         Count = item.Count,
                         Payload = Helper.FormatPayloadSize(item.Total)
                     }).ToList();
@@ -290,7 +290,7 @@ namespace WeaveCore {
 						       AND Collection = @collection";
 
             using (var conn = GetConnection()) {
-                result = conn.Query<double>(sql, new { userid = _userID, ttl = _timeNow, collection = WeaveCollectionDictionary.GetKey(collection) })
+                result = conn.Query<double>(sql, new { userid = _userID, ttl = _timeNow, collection = CollectionDictionary.GetKey(collection) })
                     .SingleOrDefault();
             }
 
@@ -307,7 +307,7 @@ namespace WeaveCore {
 
             using (var conn = GetConnection()) {
                 dic = conn.Query<dynamic>(sql, new { userid = _userID })
-                    .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (double)w.Timestamp);
+                    .ToDictionary(w => (string)CollectionDictionary.GetValue(w.Collection), w => (double)w.Timestamp);
             }
 
             return dic;
@@ -324,7 +324,7 @@ namespace WeaveCore {
 
             using (var conn = GetConnection()) {
                 dic = conn.Query<dynamic>(sql, new { userid = _userID, ttl = _timeNow })
-                    .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (long)w.Count);
+                    .ToDictionary(w => (string)CollectionDictionary.GetValue(w.Collection), w => (long)w.Count);
             }
 
             return dic;
@@ -357,7 +357,7 @@ namespace WeaveCore {
 
             using (var conn = GetConnection()) {
                 dic = conn.Query<dynamic>(sql, new { userid = _userID, ttl = _timeNow })
-                    .ToDictionary(w => (string)WeaveCollectionDictionary.GetValue(w.Collection), w => (int)w.Total / 1024);
+                    .ToDictionary(w => (string)CollectionDictionary.GetValue(w.Collection), w => (int)w.Total / 1024);
             }
 
             return dic;
@@ -394,7 +394,7 @@ namespace WeaveCore {
             }
         }
 
-        public void SaveWboList(Collection<WeaveBasicObject> wboList, WeaveResultList resultList) {
+        public void SaveWboList(Collection<WeaveBasicObject> wboList, ResultList resultList) {
             if (wboList == null || wboList.Count <= 0) {
                 return;
             }
@@ -447,7 +447,7 @@ namespace WeaveCore {
 						       AND Id = @id";
 
             using (var conn = GetConnection()) {
-                conn.Execute(sql, new { userid = _userID, id = id, collection = WeaveCollectionDictionary.GetKey(collection) });
+                conn.Execute(sql, new { userid = _userID, id = id, collection = CollectionDictionary.GetKey(collection) });
             }
         }
 
@@ -462,7 +462,7 @@ namespace WeaveCore {
 
                 var param = new DynamicParameters();
                 param.Add("UserId", _userID);
-                param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
+                param.Add("Collection", CollectionDictionary.GetKey(collection));
 
                 if (limit != null || offset != null || sort != null) {
                     IList<WeaveBasicObject> wboList = GetWboList(collection, id, false, newer, older, sort, limit, offset, ids, indexAbove, indexBelow);
@@ -520,7 +520,7 @@ namespace WeaveCore {
                                AND Ttl > @ttl";
 
             using (var conn = GetConnection()) {
-                wbo = conn.Query<WeaveBasicObject>(sql, new { userid = _userID, ttl = _timeNow, collection = WeaveCollectionDictionary.GetKey(collection), id = id })
+                wbo = conn.Query<WeaveBasicObject>(sql, new { userid = _userID, ttl = _timeNow, collection = CollectionDictionary.GetKey(collection), id = id })
                     .SingleOrDefault();
             }
 
@@ -548,7 +548,7 @@ namespace WeaveCore {
                 var param = new DynamicParameters();
                 param.Add("UserId", _userID);
                 param.Add("Ttl", _timeNow);
-                param.Add("Collection", WeaveCollectionDictionary.GetKey(collection));
+                param.Add("Collection", CollectionDictionary.GetKey(collection));
 
                 if (id != null) {
                     sb.Append(" AND Id = @id");

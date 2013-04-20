@@ -19,11 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 namespace WeaveCore.Models {
-    public class User {
-        public long UserId { get; set; }
-        public string UserName { get; set; }
+    public class CollectionData {
+        public string Collection { get; set; }
+        public long Count { get; set; }
         public string Payload { get; set; }
-        public double DateMin { get; set; }
-        public double DateMax { get; set; }
     }
 }

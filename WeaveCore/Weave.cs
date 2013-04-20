@@ -30,48 +30,42 @@ using WeaveCore.Models;
 namespace WeaveCore {
     public class Weave : LogEventBase {
         readonly DBRepository _db;
-        readonly WeaveRequest _req;
+        private string _loginName;
+        private WeaveResponse _response;
+        private WeaveRequest _request;
 
-        public Dictionary<string, string> Headers { get; private set; }
-        public string ErrorStatus { get; private set; }
-        public int ErrorStatusCode { get; private set; }
-        public string Response { get; private set; }
+        public Weave() {
+            _db = new DBRepository();
+        }
 
-        public Weave(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
-            _req = new WeaveRequest(url, serverVariables, queryString, inputStream);
+        public WeaveResponse ProcessRequest(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
+            _response = new WeaveResponse();
+            ParseRequest(url, serverVariables, queryString, inputStream);
 
-            Headers = new Dictionary<string, string> { { "Content-type", "application/json" }, { "X-Weave-Timestamp", _req.RequestTime + "" } };
+            _response.Headers = new Dictionary<string, string> { { "Content-type", "application/json" }, { "X-Weave-Timestamp", _request.RequestTime + "" } };
 
-            if (!_req.IsValid) {
-                if (_req.ErrorMessage != 0) {
-                    Response = ReportProblem(_req.ErrorMessage, _req.ErrorCode);
+            if (!_request.IsValid) {
+                if (_request.ErrorMessage != 0) {
+                    _response.Response = SetError(_request.ErrorMessage, _request.ErrorCode);
                 }
 
-                return;
-            }
-
-            if (_req.PathName == "user") {
-                if (!RequestUser()) {
-                    return;
-                }
+                return _response;
             }
 
             try {
-                _db = new DBRepository();
-
-                if (_db.AuthenticateUser(_req.UserName, _req.Password) == 0) {
-                    Response = ReportProblem("Authentication failed", 401);
-                    return;
+                if (_db.AuthenticateUser(_request.UserName, _request.Password) == 0) {
+                    _response.Response = SetError("Authentication failed", 401);
+                    return _response;
                 }
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
-                Response = ReportProblem("Database unavailable", 503);
-                return;
+                _response.Response = SetError("Database unavailable", 503);
+                return _response;
             }
 
-            switch (_req.RequestMethod) {
+            switch (_request.RequestMethod) {
                 case RequestMethod.GET:
-                    switch (_req.Function) {
+                    switch (_request.Function) {
                         case RequestFunction.Info:
                             RequestGetInfo();
                             break;
@@ -79,10 +73,10 @@ namespace WeaveCore {
                             RequestGetStorage();
                             break;
                         case RequestFunction.Node:
-                            Response = _req.Url;
+                            _response.Response = _request.Url;
                             break;
                         default:
-                            Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
+                            _response.Response = SetError(WeaveErrorCodes.InvalidProtocol, 400);
                             break;
                     }
                     break;
@@ -96,33 +90,213 @@ namespace WeaveCore {
                     RequestDelete();
                     break;
                 default:
-                    Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
+                    _response.Response = SetError(WeaveErrorCodes.InvalidProtocol, 400);
                     break;
+            }
+
+            return _response;
+        }
+
+        #region Parse Request
+        private void ParseRequest(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
+            _request = new WeaveRequest();
+
+            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
+            _request.RequestTime = Convert.ToInt64(ts.TotalSeconds);
+
+            if (serverVariables == null || serverVariables.Count == 0 || String.IsNullOrEmpty(url.AbsolutePath)) {
+                _request.IsValid = false;
+                return;
+            }
+
+            string baseUrl = url.AbsoluteUri;
+            if (url.AbsolutePath.Length > 1) {
+                baseUrl = baseUrl.Substring(0, baseUrl.IndexOf(url.AbsolutePath) + 1);
+            }
+            _request.Url = baseUrl;
+
+            _request.QueryString = queryString;
+            _request.ServerVariables = serverVariables;
+            _request.RequestMethod = (RequestMethod)Enum.Parse(typeof(RequestMethod), serverVariables["REQUEST_METHOD"]);
+
+            GetAuthenticationInfo(serverVariables["HTTP_AUTHORIZATION"]);
+
+            ParseUrl(url.AbsolutePath);
+
+            if ((_request.RequestMethod == RequestMethod.POST || _request.RequestMethod == RequestMethod.PUT) && inputStream != null && inputStream.Length != 0) {
+                GetContent(inputStream);
+            }
+
+            if (serverVariables["HTTP_X_IF_UNMODIFIED_SINCE"] != null) {
+                _request.HttpX = Math.Round(Convert.ToDouble(serverVariables["HTTP_X_IF_UNMODIFIED_SINCE"]), 2);
+            }
+
+            if (_request.IsValid) {
+                Validate();
+            }
+
+            if (_request.PathName != "user") {
+                return;
+            }
+
+            if (_request.UserName == "a") {
+                _response.Response = "0";
+                _request.IsValid = false;
+                return;
+            }
+
+            if (_request.UserName.Length == 32) {
+                var wa = new WeaveAdmin();
+                if (_request.RequestMethod == RequestMethod.GET && _request.Function == RequestFunction.NotSupported) {
+                    _response.Response = wa.IsUserNameUnique(_request.UserName) ? "0" : "1";
+                    _request.IsValid = false;
+                    return;
+                }
+
+                if (_request.RequestMethod == RequestMethod.PUT) {
+                    var dic = JsonConvert.DeserializeObject<Dictionary<string, object>>(_request.Content);
+
+                    if (dic == null || dic.Count == 0) {
+                        _response.Response = SetError("Unable to extract from json", 400);
+                        _request.IsValid = false;
+                        return;
+                    }
+
+                    string output = wa.CreateUser(_request.UserName, (string)dic["password"], (string)dic["email"]);
+                    _response.Response = String.IsNullOrEmpty(output) ? _request.UserName : output;
+                    _request.IsValid = false;
+                }
             }
         }
 
+        private void ParseUrl(string rawUrl) {
+            int end = rawUrl.ToLower().IndexOf('?');
+            if (end > -1) {
+                rawUrl = rawUrl.Substring(0, end);
+            }
+            if (rawUrl.StartsWith("/")) {
+                rawUrl = rawUrl.Substring(1, rawUrl.Length - 1);
+            }
+
+            string[] path = rawUrl.Split(new[] { '/' });
+
+            if (path.Length < 3 || path.Length > 6) {
+                _request.IsValid = false;
+                return;
+            }
+
+            int offset = 0;
+            if (path[0] == "user") {
+                _request.PathName = path[0];
+            } else {
+                offset = -1;
+            }
+
+            _request.Version = path[1 + offset];
+            _request.UserName = path[2 + offset];
+
+            if (path.Length > 3 + offset) {
+                RequestFunction requestFunction;
+                _request.Function = Enum.TryParse(path[3 + offset], true, out requestFunction) ? requestFunction : RequestFunction.NotSupported;
+            }
+            if (path.Length > 4 + offset) {
+                _request.Collection = path[4 + offset];
+            }
+            if (path.Length > 5 + offset) {
+                _request.Id = path[5 + offset];
+            }
+
+            _request.IsValid = true;
+        }
+
+        private void GetAuthenticationInfo(string authHeader) {
+            if (!string.IsNullOrEmpty(authHeader)) {
+                if (authHeader.StartsWith("basic ", StringComparison.InvariantCultureIgnoreCase)) {
+                    byte[] bytes = Convert.FromBase64String(authHeader.Substring(6));
+                    string s = new ASCIIEncoding().GetString(bytes);
+
+                    string[] parts = s.Split(new[] { ':' });
+                    if (parts.Length == 2) {
+                        _loginName = parts[0].ToLower();
+                        _request.Password = parts[1];
+                    }
+                }
+            }
+        }
+
+        private void GetContent(Stream inputStream) {
+            if (inputStream != null) {
+                try {
+                    using (StreamReader sr = new StreamReader(inputStream)) {
+                        sr.BaseStream.Position = 0;
+                        _request.Content = sr.ReadToEnd();
+                    }
+                } catch (IOException) {
+                    _request.Content = null;
+                }
+            } else {
+                _request.Content = null;
+            }
+        }
+
+        private void Validate() {
+            if (_request.Version != "1.0" && _request.Version != "1.1") {
+                _request.ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
+                _request.ErrorCode = 404;
+                _request.IsValid = false;
+            } else if (_request.Function == RequestFunction.Password && _request.RequestMethod != RequestMethod.POST) {
+                _request.ErrorMessage = WeaveErrorCodes.InvalidProtocol;
+                _request.ErrorCode = 400;
+                _request.IsValid = false;
+            } else if (_request.Function == RequestFunction.Info && _request.RequestMethod != RequestMethod.GET) {
+                _request.ErrorMessage = WeaveErrorCodes.InvalidProtocol;
+                _request.ErrorCode = 400;
+                _request.IsValid = false;
+            } else if ((_request.RequestMethod == RequestMethod.POST || _request.RequestMethod == RequestMethod.PUT) && String.IsNullOrEmpty(_request.Content)) {
+                _request.ErrorMessage = WeaveErrorCodes.InvalidProtocol;
+                _request.ErrorCode = 400;
+                _request.IsValid = false;
+            } else if (_request.PathName != "user") {
+                if (_request.Function == RequestFunction.NotSupported) {
+                    _request.ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
+                    _request.ErrorCode = 400;
+                    _request.IsValid = false;
+                } else if (String.IsNullOrEmpty(_request.Password)) {
+                    _request.ErrorMessage = WeaveErrorCodes.MissingPassword;
+                    _request.ErrorCode = 401;
+                    _request.IsValid = false;
+                } else if (_request.UserName != _loginName) {
+                    _request.ErrorMessage = WeaveErrorCodes.UseridPathMismatch;
+                    _request.ErrorCode = 401;
+                    _request.IsValid = false;
+                }
+            }
+        }
+        #endregion
+
+        #region Process Request
         private void RequestGetInfo() {
             try {
-                switch (_req.Collection) {
+                switch (_request.Collection) {
                     case "quota":
-                        Response = JsonConvert.SerializeObject(new[] { _db.GetStorageTotal() });
+                        _response.Response = JsonConvert.SerializeObject(new[] { _db.GetStorageTotal() });
                         break;
                     case "collections":
-                        Response = JsonConvert.SerializeObject(_db.GetCollectionListWithTimestamps());
+                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithTimestamps());
                         break;
                     case "collection_counts":
-                        Response = JsonConvert.SerializeObject(_db.GetCollectionListWithCounts());
+                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithCounts());
                         break;
                     case "collection_usage":
-                        Response = JsonConvert.SerializeObject(_db.GetCollectionStorageTotals());
+                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionStorageTotals());
                         break;
                     default:
-                        Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
+                        _response.Response = SetError(WeaveErrorCodes.InvalidProtocol, 400);
                         break;
                 }
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
-                Response = ReportProblem("Database unavailable", 503);
+                _response.Response = SetError("Database unavailable", 503);
             }
         }
 
@@ -130,48 +304,48 @@ namespace WeaveCore {
             IList<WeaveBasicObject> wboList;
             string formatType = "json";
 
-            if (_req.Id != null) {
+            if (_request.Id != null) {
                 try {
-                    wboList = _db.GetWboList(_req.Collection, _req.Id, true);
+                    wboList = _db.GetWboList(_request.Collection, _request.Id, true);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
-                    Response = ReportProblem("Database unavailable", 503);
+                    _response.Response = SetError("Database unavailable", 503);
                     return;
                 }
 
                 if (wboList.Count > 0) {
-                    Response = wboList[0].ToJson();
+                    _response.Response = wboList[0].ToJson();
                 } else {
-                    Response = ReportProblem("record not found", 404);
+                    _response.Response = SetError("record not found", 404);
                 }
             } else {
-                string full = _req.QueryString["full"];
-                string accept = _req.ServerVariables["HTTP_ACCEPT"];
+                string full = _request.QueryString["full"];
+                string accept = _request.ServerVariables["HTTP_ACCEPT"];
                 if (accept != null) {
                     if (accept.Contains("application/whoisi")) {
-                        Headers.Remove("Content-type");
-                        Headers.Add("Content-type", "application/whoisi");
+                        _response.Headers.Remove("Content-type");
+                        _response.Headers.Add("Content-type", "application/whoisi");
                         formatType = "whoisi";
                     } else if (accept.Contains("application/newlines")) {
-                        Headers.Remove("Content-type");
-                        Headers.Add("Content-type", "application/newlines");
+                        _response.Headers.Remove("Content-type");
+                        _response.Headers.Add("Content-type", "application/newlines");
                         formatType = "newlines";
                     }
                 }
 
                 try {
-                    wboList = _db.GetWboList(_req.Collection, null, full == "1",
-                                                    _req.QueryString["newer"],
-                                                    _req.QueryString["older"],
-                                                    _req.QueryString["sort"],
-                                                    _req.QueryString["limit"],
-                                                    _req.QueryString["offset"],
-                                                    _req.QueryString["ids"],
-                                                    _req.QueryString["index_above"],
-                                                    _req.QueryString["index_below"]);
+                    wboList = _db.GetWboList(_request.Collection, null, full == "1",
+                                                    _request.QueryString["newer"],
+                                                    _request.QueryString["older"],
+                                                    _request.QueryString["sort"],
+                                                    _request.QueryString["limit"],
+                                                    _request.QueryString["offset"],
+                                                    _request.QueryString["ids"],
+                                                    _request.QueryString["index_above"],
+                                                    _request.QueryString["index_below"]);
 
                     if (wboList.Count > 0) {
-                        Headers.Add("X-Weave-Records", wboList.Count + "");
+                        _response.Headers.Add("X-Weave-Records", wboList.Count + "");
                     }
 
                     StringBuilder sb = new StringBuilder();
@@ -225,75 +399,75 @@ namespace WeaveCore {
                             break;
                     }
 
-                    Response = sb.ToString();
+                    _response.Response = sb.ToString();
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
-                    Response = ReportProblem("Database unavailable", 503);
+                    _response.Response = SetError("Database unavailable", 503);
                 }
             }
         }
 
         private void RequestPut() {
-            if (_req.HttpX != null && _db.GetMaxTimestamp(_req.Collection) <= _req.HttpX.Value) {
-                Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
+            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+                _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
             var wbo = new WeaveBasicObject();
 
-            if (!wbo.Populate(_req.Content)) {
-                Response = ReportProblem(WeaveErrorCodes.InvalidProtocol, 400);
+            if (!wbo.Populate(_request.Content)) {
+                _response.Response = SetError(WeaveErrorCodes.InvalidProtocol, 400);
                 return;
             }
 
-            if (wbo.Id == null && _req.Id != null) {
-                wbo.Id = _req.Id;
+            if (wbo.Id == null && _request.Id != null) {
+                wbo.Id = _request.Id;
             }
 
-            wbo.Collection = WeaveCollectionDictionary.GetKey(_req.Collection);
-            wbo.Modified = _req.RequestTime;
+            wbo.Collection = CollectionDictionary.GetKey(_request.Collection);
+            wbo.Modified = _request.RequestTime;
 
             if (wbo.Validate()) {
                 try {
                     _db.SaveWbo(wbo);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
-                    Response = ReportProblem("Database unavailable", 503);
+                    _response.Response = SetError("Database unavailable", 503);
                     return;
                 }
             } else {
-                Response = ReportProblem(WeaveErrorCodes.InvalidWbo, 400);
+                _response.Response = SetError(WeaveErrorCodes.InvalidWbo, 400);
                 return;
             }
 
             if (wbo.Modified != null) {
-                Response = JsonConvert.SerializeObject(wbo.Modified.Value);
+                _response.Response = JsonConvert.SerializeObject(wbo.Modified.Value);
             }
         }
 
         private void RequestPost() {
-            if (_req.Function == RequestFunction.Password) {
+            if (_request.Function == RequestFunction.Password) {
                 try {
-                    _db.ChangePassword(_req.Content);
+                    _db.ChangePassword(_request.Content);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
-                    Response = ReportProblem("Database unavailable", 503);
+                    _response.Response = SetError("Database unavailable", 503);
                     return;
                 }
 
-                Response = "success";
+                _response.Response = "success";
                 return;
             }
 
-            if (_req.HttpX != null && _db.GetMaxTimestamp(_req.Collection) <= _req.HttpX.Value) {
-                Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
+            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+                _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
-            var resultList = new WeaveResultList(_req.RequestTime);
+            var resultList = new ResultList(_request.RequestTime);
             var wboList = new Collection<WeaveBasicObject>();
 
-            var dicArray = JsonConvert.DeserializeObject<Dictionary<string, object>[]>(_req.Content);
+            var dicArray = JsonConvert.DeserializeObject<Dictionary<string, object>[]>(_request.Content);
 
             foreach (Dictionary<string, object> dic in dicArray) {
                 var wbo = new WeaveBasicObject();
@@ -307,8 +481,8 @@ namespace WeaveCore {
                     continue;
                 }
 
-                wbo.Collection = WeaveCollectionDictionary.GetKey(_req.Collection);
-                wbo.Modified = _req.RequestTime;
+                wbo.Collection = CollectionDictionary.GetKey(_request.Collection);
+                wbo.Modified = _request.RequestTime;
 
                 if (wbo.Validate()) {
                     wboList.Add(wbo);
@@ -322,107 +496,78 @@ namespace WeaveCore {
                     _db.SaveWboList(wboList, resultList);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
-                    Response = ReportProblem("Database unavailable", 503);
+                    _response.Response = SetError("Database unavailable", 503);
                     return;
                 }
             }
 
-            Response = resultList.ToJson();
+            _response.Response = resultList.ToJson();
         }
 
         private void RequestDelete() {
-            if (_req.HttpX != null && _db.GetMaxTimestamp(_req.Collection) <= _req.HttpX.Value) {
-                Response = ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
+            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+                _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
-            if (_req.Id != null) {
+            if (_request.Id != null) {
                 try {
-                    _db.DeleteWbo(_req.Collection, _req.Id);
+                    _db.DeleteWbo(_request.Collection, _request.Id);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
-                    Response = ReportProblem("Database unavailable", 503);
+                    _response.Response = SetError("Database unavailable", 503);
                     return;
                 }
 
-                Response = JsonConvert.SerializeObject(_req.RequestTime);
-            } else if (_req.Collection != null) {
+                _response.Response = JsonConvert.SerializeObject(_request.RequestTime);
+            } else if (_request.Collection != null) {
                 try {
-                    _db.DeleteWboList(_req.Collection, null,
-                                _req.QueryString["newer"],
-                                _req.QueryString["older"],
-                                _req.QueryString["sort"],
-                                _req.QueryString["limit"],
-                                _req.QueryString["offset"],
-                                _req.QueryString["ids"],
-                                _req.QueryString["index_above"],
-                                _req.QueryString["index_below"]
+                    _db.DeleteWboList(_request.Collection, null,
+                                _request.QueryString["newer"],
+                                _request.QueryString["older"],
+                                _request.QueryString["sort"],
+                                _request.QueryString["limit"],
+                                _request.QueryString["offset"],
+                                _request.QueryString["ids"],
+                                _request.QueryString["index_above"],
+                                _request.QueryString["index_below"]
                                 );
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
-                    Response = ReportProblem("Database unavailable", 503);
+                    _response.Response = SetError("Database unavailable", 503);
                     return;
                 }
 
-                Response = JsonConvert.SerializeObject(_req.RequestTime);
+                _response.Response = JsonConvert.SerializeObject(_request.RequestTime);
             } else {
-                if (_req.ServerVariables["HTTP_X_CONFIRM_DELETE"] == null) {
-                    ReportProblem(WeaveErrorCodes.NoOverwrite, 412);
+                if (_request.ServerVariables["HTTP_X_CONFIRM_DELETE"] == null) {
+                    SetError(WeaveErrorCodes.NoOverwrite, 412);
                 }
             }
         }
+        #endregion
 
-        private bool RequestUser() {
-            if (_req.UserName == "a") {
-                Response = "0";
-                return false;
-            }
-
-            if (_req.UserName.Length == 32) {
-                var wa = new WeaveAdmin();
-                if (_req.RequestMethod == RequestMethod.GET && _req.Function == RequestFunction.NotSupported) {
-                    Response = wa.IsUserNameUnique(_req.UserName) ? "0" : "1";
-                    return false;
-                }
-
-                if (_req.RequestMethod == RequestMethod.PUT) {
-                    var dic = JsonConvert.DeserializeObject<Dictionary<string, object>>(_req.Content);
-
-                    if (dic == null || dic.Count == 0) {
-                        Response = ReportProblem("Unable to extract from json", 400);
-                        return false;
-                    }
-
-                    string output = wa.CreateUser(_req.UserName, (string)dic["password"], (string)dic["email"]);
-                    Response = String.IsNullOrEmpty(output) ? _req.UserName : output;
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private string ReportProblem(object message, int code) {
+        private string SetError(object message, int code) {
             switch (code) {
                 case 400:
-                    ErrorStatus = "400 Bad Request";
+                    _response.ErrorStatus = "400 Bad Request";
                     break;
                 case 401:
-                    ErrorStatus = "401 Unauthorized";
-                    Headers.Add("WWW-Authenticate", "Basic realm=\"Weave\"");
+                    _response.ErrorStatus = "401 Unauthorized";
+                    _response.Headers.Add("WWW-Authenticate", "Basic realm=\"Weave\"");
                     break;
                 case 404:
-                    ErrorStatus = "404 Not Found";
+                    _response.ErrorStatus = "404 Not Found";
                     break;
                 case 412:
-                    ErrorStatus = "412 Precondition Failed";
+                    _response.ErrorStatus = "412 Precondition Failed";
                     break;
                 case 503:
-                    ErrorStatus = "503 Service Unavailable";
+                    _response.ErrorStatus = "503 Service Unavailable";
                     break;
             }
 
-            ErrorStatusCode = code;
+            _response.ErrorStatusCode = code;
 
             return JsonConvert.SerializeObject(message);
         }

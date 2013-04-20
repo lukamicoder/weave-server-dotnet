@@ -21,27 +21,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System;
 using System.Web.Mvc;
 using WeaveCore;
+using WeaveCore.Models;
 using WeaveServer.Services;
 
 namespace WeaveServer.Controllers {
     public class WeaveController : Controller {
         public ContentResult Index() {
-            var weave = new Weave(Request.Url, Request.ServerVariables, Request.QueryString, Request.InputStream);
-
+            var weave = new Weave();
             weave.LogEvent += OnLogEvent;
 
-            if (weave.Response != null && weave.Headers != null && weave.Headers.Count > 0) {
-                foreach (var pair in weave.Headers) {
+            WeaveResponse response = weave.ProcessRequest(Request.Url, Request.ServerVariables, Request.QueryString, Request.InputStream);
+
+            if (response.Response != null && response.Headers != null && response.Headers.Count > 0) {
+                foreach (var pair in response.Headers) {
                     Response.AppendHeader(pair.Key, pair.Value);
                 }
             }
 
-            if (!String.IsNullOrEmpty(weave.ErrorStatus)) {
-                Response.Status = weave.ErrorStatus;
-                Response.StatusCode = weave.ErrorStatusCode;
+            if (!String.IsNullOrEmpty(response.ErrorStatus)) {
+                Response.Status = response.ErrorStatus;
+                Response.StatusCode = response.ErrorStatusCode;
             }
 
-            return Content(weave.Response);
+            return Content(response.Response);
         }
 
         private void OnLogEvent(object source, LogEventArgs args) {

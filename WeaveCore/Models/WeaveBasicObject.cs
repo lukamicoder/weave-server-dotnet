@@ -81,7 +81,7 @@ namespace WeaveCore.Models {
             }
 
             if (dic.ContainsKey("collection") && dic["collection"] != DBNull.Value) {
-                Collection = WeaveCollectionDictionary.GetKey((string)dic["collection"]);
+                Collection = CollectionDictionary.GetKey((string)dic["collection"]);
             }
 
             if (dic.ContainsKey("modified") && dic["modified"] != DBNull.Value) {

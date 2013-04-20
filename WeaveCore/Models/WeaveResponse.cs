@@ -18,12 +18,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System.Collections.Generic;
+
 namespace WeaveCore.Models {
-    public class User {
-        public long UserId { get; set; }
-        public string UserName { get; set; }
-        public string Payload { get; set; }
-        public double DateMin { get; set; }
-        public double DateMax { get; set; }
+    public class WeaveResponse {
+        public Dictionary<string, string> Headers { get; set; }
+        public string ErrorStatus { get; set; }
+        public int ErrorStatusCode { get; set; }
+        public string Response { get; set; }
     }
 }
