@@ -458,51 +458,51 @@ namespace WeaveCore {
             using (var conn = GetConnection()) {
                 sb.Append(@"DELETE FROM Wbos 
 						    WHERE UserId = @userid
-							AND Collection = @collection");
+							    AND Collection = @collection ");
 
                 var param = new DynamicParameters();
-                param.Add("UserId", _userID);
-                param.Add("Collection", CollectionDictionary.GetKey(collection));
+                param.Add("userid", _userID);
+                param.Add("collection", CollectionDictionary.GetKey(collection));
 
                 if (limit != null || offset != null || sort != null) {
                     IList<WeaveBasicObject> wboList = GetWboList(collection, id, false, newer, older, sort, limit, offset, ids, indexAbove, indexBelow);
                     if (wboList.Count > 0) {
-                        sb.Append(" AND Id IN (@ids)");
+                        sb.Append(" AND Id IN @ids");
                         var idArray = new string[wboList.Count];
                         for (int x = 0; x < wboList.Count; x++) {
                             idArray[x] = wboList[x].Id;
                         }
-                        param.Add("Ids", idArray);
+                        param.Add("ids", idArray);
                     }
                 } else {
                     if (id != null) {
                         sb.Append(" AND Id = @id");
-                        param.Add("Id", id);
+                        param.Add("id", id);
                     }
 
                     if (ids != null) {
-                        sb.Append(" AND Id IN (@ids)");
-                        param.Add("Ids", ids.Split(new[] { ',' }));
+                        sb.Append(" AND Id IN @ids");
+                        param.Add("ids", ids.Split(new[] { ',' }));
                     }
 
                     if (indexAbove != null) {
                         sb.Append("AND SortIndex > @indexAbove");
-                        param.Add("IndexAbove", Convert.ToInt64(indexAbove));
+                        param.Add("indexAbove", Convert.ToInt64(indexAbove));
                     }
 
                     if (indexBelow != null) {
                         sb.Append(" AND SortIndex < @indexBelow");
-                        param.Add("IndexBelow", Convert.ToInt64(indexBelow));
+                        param.Add("indexBelow", Convert.ToInt64(indexBelow));
                     }
 
                     if (newer != null) {
                         sb.Append(" AND Modified > @newer");
-                        param.Add("Newer", Convert.ToDouble(newer));
+                        param.Add("newer", Convert.ToDouble(newer));
                     }
 
                     if (older != null) {
                         sb.Append(" AND Modified < @older");
-                        param.Add("Older", Convert.ToDouble(older));
+                        param.Add("older", Convert.ToDouble(older));
                     }
                 }
 
@@ -546,38 +546,38 @@ namespace WeaveCore {
                 }
 
                 var param = new DynamicParameters();
-                param.Add("UserId", _userID);
-                param.Add("Ttl", _timeNow);
-                param.Add("Collection", CollectionDictionary.GetKey(collection));
+                param.Add("userId", _userID);
+                param.Add("ttl", _timeNow);
+                param.Add("collection", CollectionDictionary.GetKey(collection));
 
                 if (id != null) {
                     sb.Append(" AND Id = @id");
-                    param.Add("Id", id);
+                    param.Add("id", id);
                 }
 
                 if (ids != null) {
-                    sb.Append(" AND Id IN (@ids)");
-                    param.Add("Ids", ids.Split(new[] { ',' }));
+                    sb.Append(" AND Id IN @ids");
+                    param.Add("ids", ids.Split(new[] { ',' }));
                 }
 
                 if (indexAbove != null) {
                     sb.Append("AND SortIndex > @indexAbove");
-                    param.Add("IndexAbove", Convert.ToInt64(indexAbove));
+                    param.Add("indexAbove", Convert.ToInt64(indexAbove));
                 }
 
                 if (indexBelow != null) {
                     sb.Append(" AND SortIndex < @indexBelow");
-                    param.Add("IndexBelow", Convert.ToInt64(indexBelow));
+                    param.Add("indexBelow", Convert.ToInt64(indexBelow));
                 }
 
                 if (newer != null) {
                     sb.Append(" AND Modified > @newer");
-                    param.Add("Newer", Convert.ToDouble(newer));
+                    param.Add("newer", Convert.ToDouble(newer));
                 }
 
                 if (older != null) {
                     sb.Append(" AND Modified < @older");
-                    param.Add("Older", Convert.ToDouble(older));
+                    param.Add("older", Convert.ToDouble(older));
                 }
 
                 switch (sort) {

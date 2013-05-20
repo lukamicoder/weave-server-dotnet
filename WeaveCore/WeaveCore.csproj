@@ -36,7 +36,7 @@
   <ItemGroup>
     <Reference Include="Dapper, Version=1.12.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Dapper.1.12.1\lib\net40\Dapper.dll</HintPath>
+      <HintPath>..\Libs\Dapper.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="MySql.Data">
