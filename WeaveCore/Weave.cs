@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 using WeaveCore.Models;
@@ -30,17 +29,22 @@ using WeaveCore.Models;
 namespace WeaveCore {
     public class Weave : LogEventBase {
         readonly DBRepository _db;
-        private string _loginName;
         private WeaveResponse _response;
         private WeaveRequest _request;
+
+        public string Body { get; set; }
+        public NameValueCollection QuerySegments { get; set; }
+        public NameValueCollection Headers { get; set; }
 
         public Weave() {
             _db = new DBRepository();
         }
 
-        public WeaveResponse ProcessRequest(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
+        public WeaveResponse ProcessRequest(Uri url, RequestMethod method) {
             _response = new WeaveResponse();
-            ParseRequest(url, serverVariables, queryString, inputStream);
+            _request = new WeaveRequest { RequestMethod = method };
+
+            ParseRequest(url);
 
             _response.Headers = new Dictionary<string, string> { { "Content-type", "application/json" }, { "X-Weave-Timestamp", _request.RequestTime + "" } };
 
@@ -53,7 +57,8 @@ namespace WeaveCore {
             }
 
             try {
-                if (_db.AuthenticateUser(_request.UserName, _request.Password) == 0) {
+                _request.UserId = _db.AuthenticateUser(_request.UserName, _request.LoginPassword);
+                if (_request.UserId == 0) {
                     _response.Response = SetError("Authentication failed", 401);
                     return _response;
                 }
@@ -98,13 +103,11 @@ namespace WeaveCore {
         }
 
         #region Parse Request
-        private void ParseRequest(Uri url, NameValueCollection serverVariables, NameValueCollection queryString, Stream inputStream) {
-            _request = new WeaveRequest();
-
+        private void ParseRequest(Uri url) {
             TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0);
             _request.RequestTime = Convert.ToInt64(ts.TotalSeconds);
 
-            if (serverVariables == null || serverVariables.Count == 0 || String.IsNullOrEmpty(url.AbsolutePath)) {
+            if (String.IsNullOrEmpty(url.AbsolutePath)) {
                 _request.IsValid = false;
                 return;
             }
@@ -115,57 +118,53 @@ namespace WeaveCore {
             }
             _request.Url = baseUrl;
 
-            _request.QueryString = queryString;
-            _request.ServerVariables = serverVariables;
-            _request.RequestMethod = (RequestMethod)Enum.Parse(typeof(RequestMethod), serverVariables["REQUEST_METHOD"]);
-
-            GetAuthenticationInfo(serverVariables["HTTP_AUTHORIZATION"]);
+            GetAuthenticationInfo();
 
             ParseUrl(url.AbsolutePath);
 
-            if ((_request.RequestMethod == RequestMethod.POST || _request.RequestMethod == RequestMethod.PUT) && inputStream != null && inputStream.Length != 0) {
-                GetContent(inputStream);
-            }
-
-            if (serverVariables["HTTP_X_IF_UNMODIFIED_SINCE"] != null) {
-                _request.HttpX = Math.Round(Convert.ToDouble(serverVariables["HTTP_X_IF_UNMODIFIED_SINCE"]), 2);
+            if (!String.IsNullOrEmpty(Headers["x-if-unmodified-since"])) {
+                _request.HttpX = Math.Round(Convert.ToDouble(Headers["x-if-unmodified-since"]), 2);
             }
 
             if (_request.IsValid) {
                 Validate();
             }
 
-            if (_request.PathName != "user") {
-                return;
+            if (_request.PathName == "user") {
+                ProcessUser();
             }
+        }
 
+        private void ProcessUser() {
             if (_request.UserName == "a") {
                 _response.Response = "0";
                 _request.IsValid = false;
                 return;
             }
 
-            if (_request.UserName.Length == 32) {
-                var wa = new WeaveAdmin();
-                if (_request.RequestMethod == RequestMethod.GET && _request.Function == RequestFunction.NotSupported) {
-                    _response.Response = wa.IsUserNameUnique(_request.UserName) ? "0" : "1";
+            if (_request.UserName.Length != 32) {
+                return;
+            }
+
+            var wa = new WeaveAdmin();
+            if (_request.RequestMethod == RequestMethod.GET && _request.Function == RequestFunction.NotSupported) {
+                _response.Response = wa.IsUserNameUnique(_request.UserName) ? "0" : "1";
+                _request.IsValid = false;
+                return;
+            }
+
+            if (_request.RequestMethod == RequestMethod.PUT) {
+                var dic = JsonConvert.DeserializeObject<Dictionary<string, object>>(Body);
+
+                if (dic == null || dic.Count == 0) {
+                    _response.Response = SetError("Unable to extract from json", 400);
                     _request.IsValid = false;
                     return;
                 }
 
-                if (_request.RequestMethod == RequestMethod.PUT) {
-                    var dic = JsonConvert.DeserializeObject<Dictionary<string, object>>(_request.Content);
-
-                    if (dic == null || dic.Count == 0) {
-                        _response.Response = SetError("Unable to extract from json", 400);
-                        _request.IsValid = false;
-                        return;
-                    }
-
-                    string output = wa.CreateUser(_request.UserName, (string)dic["password"], (string)dic["email"]);
-                    _response.Response = String.IsNullOrEmpty(output) ? _request.UserName : output;
-                    _request.IsValid = false;
-                }
+                string output = wa.CreateUser(_request.UserName, (string)dic["password"], (string)dic["email"]);
+                _response.Response = String.IsNullOrEmpty(output) ? _request.UserName : output;
+                _request.IsValid = false;
             }
         }
 
@@ -178,64 +177,50 @@ namespace WeaveCore {
                 rawUrl = rawUrl.Substring(1, rawUrl.Length - 1);
             }
 
-            string[] path = rawUrl.Split(new[] { '/' });
+            string[] segments = rawUrl.Split(new[] { '/' });
 
-            if (path.Length < 3 || path.Length > 6) {
+            if (segments.Length < 3 || segments.Length > 6) {
                 _request.IsValid = false;
                 return;
             }
 
             int offset = 0;
-            if (path[0] == "user") {
-                _request.PathName = path[0];
+            if (segments[0] == "user") {
+                _request.PathName = segments[0];
             } else {
                 offset = -1;
             }
 
-            _request.Version = path[1 + offset];
-            _request.UserName = path[2 + offset];
+            _request.Version = segments[1 + offset];
+            _request.UserName = segments[2 + offset];
 
-            if (path.Length > 3 + offset) {
+            if (segments.Length > 3 + offset) {
                 RequestFunction requestFunction;
-                _request.Function = Enum.TryParse(path[3 + offset], true, out requestFunction) ? requestFunction : RequestFunction.NotSupported;
+                _request.Function = Enum.TryParse(segments[3 + offset], true, out requestFunction) ? requestFunction : RequestFunction.NotSupported;
             }
-            if (path.Length > 4 + offset) {
-                _request.Collection = path[4 + offset];
+            if (segments.Length > 4 + offset) {
+                _request.Collection = segments[4 + offset];
             }
-            if (path.Length > 5 + offset) {
-                _request.Id = path[5 + offset];
+            if (segments.Length > 5 + offset) {
+                _request.Id = segments[5 + offset];
             }
 
             _request.IsValid = true;
         }
 
-        private void GetAuthenticationInfo(string authHeader) {
-            if (!string.IsNullOrEmpty(authHeader)) {
-                if (authHeader.StartsWith("basic ", StringComparison.InvariantCultureIgnoreCase)) {
-                    byte[] bytes = Convert.FromBase64String(authHeader.Substring(6));
-                    string s = new ASCIIEncoding().GetString(bytes);
-
-                    string[] parts = s.Split(new[] { ':' });
-                    if (parts.Length == 2) {
-                        _loginName = parts[0].ToLower();
-                        _request.Password = parts[1];
-                    }
-                }
+        private void GetAuthenticationInfo() {
+            string auth = Headers["authorization"];
+            if (string.IsNullOrEmpty(auth) || !auth.StartsWith("basic ", StringComparison.InvariantCultureIgnoreCase)) {
+                return;
             }
-        }
 
-        private void GetContent(Stream inputStream) {
-            if (inputStream != null) {
-                try {
-                    using (StreamReader sr = new StreamReader(inputStream)) {
-                        sr.BaseStream.Position = 0;
-                        _request.Content = sr.ReadToEnd();
-                    }
-                } catch (IOException) {
-                    _request.Content = null;
-                }
-            } else {
-                _request.Content = null;
+            byte[] bytes = Convert.FromBase64String(auth.Substring(6));
+            string s = new ASCIIEncoding().GetString(bytes);
+
+            string[] parts = s.Split(new[] { ':' });
+            if (parts.Length == 2) {
+                _request.LoginName = parts[0].ToLower();
+                _request.LoginPassword = parts[1];
             }
         }
 
@@ -252,7 +237,7 @@ namespace WeaveCore {
                 _request.ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 _request.ErrorCode = 400;
                 _request.IsValid = false;
-            } else if ((_request.RequestMethod == RequestMethod.POST || _request.RequestMethod == RequestMethod.PUT) && String.IsNullOrEmpty(_request.Content)) {
+            } else if ((_request.RequestMethod == RequestMethod.POST || _request.RequestMethod == RequestMethod.PUT) && String.IsNullOrEmpty(Body)) {
                 _request.ErrorMessage = WeaveErrorCodes.InvalidProtocol;
                 _request.ErrorCode = 400;
                 _request.IsValid = false;
@@ -261,11 +246,11 @@ namespace WeaveCore {
                     _request.ErrorMessage = WeaveErrorCodes.FunctionNotSupported;
                     _request.ErrorCode = 400;
                     _request.IsValid = false;
-                } else if (String.IsNullOrEmpty(_request.Password)) {
+                } else if (String.IsNullOrEmpty(_request.LoginPassword)) {
                     _request.ErrorMessage = WeaveErrorCodes.MissingPassword;
                     _request.ErrorCode = 401;
                     _request.IsValid = false;
-                } else if (_request.UserName != _loginName) {
+                } else if (_request.UserName != _request.LoginName) {
                     _request.ErrorMessage = WeaveErrorCodes.UseridPathMismatch;
                     _request.ErrorCode = 401;
                     _request.IsValid = false;
@@ -279,16 +264,16 @@ namespace WeaveCore {
             try {
                 switch (_request.Collection) {
                     case "quota":
-                        _response.Response = JsonConvert.SerializeObject(new[] { _db.GetStorageTotal() });
+                        _response.Response = JsonConvert.SerializeObject(new[] { _db.GetStorageTotal(_request.UserId) });
                         break;
                     case "collections":
-                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithTimestamps());
+                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithTimestamps(_request.UserId));
                         break;
                     case "collection_counts":
-                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithCounts());
+                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithCounts(_request.UserId));
                         break;
                     case "collection_usage":
-                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionStorageTotals());
+                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionStorageTotals(_request.UserId));
                         break;
                     default:
                         _response.Response = SetError(WeaveErrorCodes.InvalidProtocol, 400);
@@ -306,7 +291,7 @@ namespace WeaveCore {
 
             if (_request.Id != null) {
                 try {
-                    wboList = _db.GetWboList(_request.Collection, _request.Id, true);
+                    wboList = _db.GetWboList(_request.UserId, _request.Collection, _request.Id, true);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -319,9 +304,9 @@ namespace WeaveCore {
                     _response.Response = SetError("record not found", 404);
                 }
             } else {
-                string full = _request.QueryString["full"];
-                string accept = _request.ServerVariables["HTTP_ACCEPT"];
-                if (accept != null) {
+                string full = QuerySegments["full"];
+                string accept = Headers["accept"];
+                if (!String.IsNullOrEmpty(accept)) {
                     if (accept.Contains("application/whoisi")) {
                         _response.Headers.Remove("Content-type");
                         _response.Headers.Add("Content-type", "application/whoisi");
@@ -334,21 +319,21 @@ namespace WeaveCore {
                 }
 
                 try {
-                    wboList = _db.GetWboList(_request.Collection, null, full == "1",
-                                                    _request.QueryString["newer"],
-                                                    _request.QueryString["older"],
-                                                    _request.QueryString["sort"],
-                                                    _request.QueryString["limit"],
-                                                    _request.QueryString["offset"],
-                                                    _request.QueryString["ids"],
-                                                    _request.QueryString["index_above"],
-                                                    _request.QueryString["index_below"]);
+                    wboList = _db.GetWboList(_request.UserId, _request.Collection, null, full == "1",
+                                                    QuerySegments["newer"],
+                                                    QuerySegments["older"],
+                                                    QuerySegments["sort"],
+                                                    QuerySegments["limit"],
+                                                    QuerySegments["offset"],
+                                                    QuerySegments["ids"],
+                                                    QuerySegments["index_above"],
+                                                    QuerySegments["index_below"]);
 
                     if (wboList.Count > 0) {
                         _response.Headers.Add("X-Weave-Records", wboList.Count + "");
                     }
 
-                    StringBuilder sb = new StringBuilder();
+                    var sb = new StringBuilder();
                     int commaFlag = 0;
 
                     switch (formatType) {
@@ -408,14 +393,14 @@ namespace WeaveCore {
         }
 
         private void RequestPut() {
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
                 _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
             var wbo = new WeaveBasicObject();
 
-            if (!wbo.Populate(_request.Content)) {
+            if (!wbo.Populate(Body)) {
                 _response.Response = SetError(WeaveErrorCodes.InvalidProtocol, 400);
                 return;
             }
@@ -429,7 +414,7 @@ namespace WeaveCore {
 
             if (wbo.Validate()) {
                 try {
-                    _db.SaveWbo(wbo);
+                    _db.SaveWbo(_request.UserId, wbo);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -448,7 +433,7 @@ namespace WeaveCore {
         private void RequestPost() {
             if (_request.Function == RequestFunction.Password) {
                 try {
-                    _db.ChangePassword(_request.Content);
+                    _db.ChangePassword(_request.UserId, Body);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -459,7 +444,7 @@ namespace WeaveCore {
                 return;
             }
 
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
                 _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
@@ -467,7 +452,7 @@ namespace WeaveCore {
             var resultList = new ResultList(_request.RequestTime);
             var wboList = new Collection<WeaveBasicObject>();
 
-            var dicArray = JsonConvert.DeserializeObject<Dictionary<string, object>[]>(_request.Content);
+            var dicArray = JsonConvert.DeserializeObject<Dictionary<string, object>[]>(Body);
 
             foreach (Dictionary<string, object> dic in dicArray) {
                 var wbo = new WeaveBasicObject();
@@ -493,7 +478,7 @@ namespace WeaveCore {
 
             if (wboList.Count > 0) {
                 try {
-                    _db.SaveWboList(wboList, resultList);
+                    _db.SaveWboList(_request.UserId, wboList, resultList);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -505,14 +490,14 @@ namespace WeaveCore {
         }
 
         private void RequestDelete() {
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.Collection) <= _request.HttpX.Value) {
+            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
                 _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
             if (_request.Id != null) {
                 try {
-                    _db.DeleteWbo(_request.Collection, _request.Id);
+                    _db.DeleteWbo(_request.UserId, _request.Collection, _request.Id);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -522,15 +507,15 @@ namespace WeaveCore {
                 _response.Response = JsonConvert.SerializeObject(_request.RequestTime);
             } else if (_request.Collection != null) {
                 try {
-                    _db.DeleteWboList(_request.Collection, null,
-                                _request.QueryString["newer"],
-                                _request.QueryString["older"],
-                                _request.QueryString["sort"],
-                                _request.QueryString["limit"],
-                                _request.QueryString["offset"],
-                                _request.QueryString["ids"],
-                                _request.QueryString["index_above"],
-                                _request.QueryString["index_below"]
+                    _db.DeleteWboList(_request.UserId, _request.Collection, null,
+                                QuerySegments["newer"],
+                                QuerySegments["older"],
+                                QuerySegments["sort"],
+                                QuerySegments["limit"],
+                                QuerySegments["offset"],
+                                QuerySegments["ids"],
+                                QuerySegments["index_above"],
+                                QuerySegments["index_below"]
                                 );
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
@@ -540,7 +525,7 @@ namespace WeaveCore {
 
                 _response.Response = JsonConvert.SerializeObject(_request.RequestTime);
             } else {
-                if (_request.ServerVariables["HTTP_X_CONFIRM_DELETE"] == null) {
+                if (Headers["x-confirm-delete"] == null) {
                     SetError(WeaveErrorCodes.NoOverwrite, 412);
                 }
             }

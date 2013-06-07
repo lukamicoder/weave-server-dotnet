@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace WeaveCore.Models {
     public enum LogType {
         Error = 0,
-        Information = 1,
+        Info = 1,
         Warning = 2,
+        Debug = 3
     }
 
     public enum RequestMethod { GET, PUT, POST, DELETE }

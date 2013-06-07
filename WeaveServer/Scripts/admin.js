@@ -95,7 +95,6 @@ function openDialog(type, value, value2) {
 }
 
 function showDetails(userid, username) {
-
     $.ajax({
         url: "/Admin/GetUserDetails",
         cache: false,
@@ -135,7 +134,6 @@ function deleteUser(userid) {
         cache: false,
         data: param,
         type: 'POST',
-        dataType: 'json',
         success: function (data) {
             loadUserTable();
             $('#dialog').dialog("close");
@@ -155,7 +153,6 @@ function addUser() {
         cache: false,
         data: param,
         type: 'POST',
-        dataType: 'json',
         success: function (data) {
             loadUserTable();
             $('#dialog').dialog("close");

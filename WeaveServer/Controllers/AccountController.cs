@@ -19,17 +19,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
+using NLog;
 using WeaveCore;
 using WeaveCore.Models;
-using WeaveServer.Services;
 
 namespace WeaveServer.Controllers {
     public class AccountController : Controller {
         WeaveAdmin _weaveAdmin = new WeaveAdmin();
+        private static Logger _logger = LogManager.GetCurrentClassLogger();
 
         public AccountController() {
             _weaveAdmin.LogEvent += OnLogEvent;
@@ -115,7 +115,23 @@ namespace WeaveServer.Controllers {
         }
 
         private void OnLogEvent(object source, LogEventArgs args) {
-            Logger.WriteMessage(args.Message, args.Type);
+            var level = LogLevel.Off;
+            switch (args.Type) {
+                case LogType.Error:
+                    level = LogLevel.Error;
+                    break;
+                case LogType.Info:
+                    level = LogLevel.Info;
+                    break;
+                case LogType.Warning:
+                    level = LogLevel.Warn;
+                    break;
+                case LogType.Debug:
+                    level = LogLevel.Debug;
+                    break;
+            }
+
+            _logger.Log(level, args.Message);
         }
     }
 }

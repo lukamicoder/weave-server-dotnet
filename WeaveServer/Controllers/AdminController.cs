@@ -22,12 +22,14 @@ using System;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
+using NLog;
 using WeaveCore;
-using WeaveServer.Services;
+using WeaveCore.Models;
 
 namespace WeaveServer.Controllers {
     public class AdminController : Controller {
         WeaveAdmin _weaveAdmin = new WeaveAdmin();
+        private static Logger _logger = LogManager.GetCurrentClassLogger();
 
         public AdminController() {
             _weaveAdmin.LogEvent += OnLogEvent;
@@ -103,7 +105,23 @@ namespace WeaveServer.Controllers {
         }
 
         private void OnLogEvent(object source, LogEventArgs args) {
-            Logger.WriteMessage(args.Message, args.Type);
+            var level = LogLevel.Off;
+            switch (args.Type) {
+                case LogType.Error:
+                    level = LogLevel.Error;
+                    break;
+                case LogType.Info:
+                    level = LogLevel.Info;
+                    break;
+                case LogType.Warning:
+                    level = LogLevel.Warn;
+                    break;
+                case LogType.Debug:
+                    level = LogLevel.Debug;
+                    break;
+            }
+
+            _logger.Log(level, args.Message);
         }
     }
 }

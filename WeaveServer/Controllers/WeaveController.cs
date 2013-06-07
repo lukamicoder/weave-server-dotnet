@@ -20,17 +20,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using System;
 using System.Web.Mvc;
+using NLog;
 using WeaveCore;
 using WeaveCore.Models;
-using WeaveServer.Services;
 
 namespace WeaveServer.Controllers {
     public class WeaveController : Controller {
+        private static Logger _logger = LogManager.GetCurrentClassLogger();
+
         public ContentResult Index() {
             var weave = new Weave();
             weave.LogEvent += OnLogEvent;
 
-            WeaveResponse response = weave.ProcessRequest(Request.Url, Request.ServerVariables, Request.QueryString, Request.InputStream);
+            weave.QuerySegments = Request.QueryString;
+            weave.Headers = Request.Headers;
+            weave.Body = GetContent();
+
+            RequestMethod method;
+            Enum.TryParse(Request.HttpMethod, out method);
+
+            var response = weave.ProcessRequest(Request.Url, method);
 
             if (response.Response != null && response.Headers != null && response.Headers.Count > 0) {
                 foreach (var pair in response.Headers) {
@@ -46,8 +55,40 @@ namespace WeaveServer.Controllers {
             return Content(response.Response);
         }
 
+        protected string GetContent() {
+            if (Request.InputStream == null) {
+                return null;
+            }
+
+            var buffer = new byte[Request.InputStream.Length];
+
+            if (buffer.Length == 0) {
+                return null;
+            }
+
+            Request.InputStream.Read(buffer, 0, Convert.ToInt32(Request.InputStream.Length));
+
+            return System.Text.Encoding.Default.GetString(buffer);
+        }
+
         private void OnLogEvent(object source, LogEventArgs args) {
-            Logger.WriteMessage(args.Message, args.Type);
+            var level = LogLevel.Off;
+            switch (args.Type) {
+                case LogType.Error:
+                    level = LogLevel.Error;
+                    break;
+                case LogType.Info:
+                    level = LogLevel.Info;
+                    break;
+                case LogType.Warning:
+                    level = LogLevel.Warn;
+                    break;
+                case LogType.Debug:
+                    level = LogLevel.Debug;
+                    break;
+            }
+
+            _logger.Log(level, args.Message);
         }
     }
 }

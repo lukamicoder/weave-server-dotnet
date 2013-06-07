@@ -79,7 +79,7 @@ namespace WeaveCore {
             } else {
                 try {
                     _db.CreateUser(userName, password, email);
-                    RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Information);
+                    RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Info);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     msg = String.Format("There was an error on adding {0}.", userName);
@@ -106,7 +106,7 @@ namespace WeaveCore {
             }
 
             if (String.IsNullOrEmpty(msg)) {
-                RaiseLogEvent(this, String.Format("{0} user account has been deleted.", userName), LogType.Information);
+                RaiseLogEvent(this, String.Format("{0} user account has been deleted.", userName), LogType.Info);
             }
 
             return msg;
@@ -114,7 +114,7 @@ namespace WeaveCore {
 
         public string ChangePassword(long userId, string password) {
             try {
-                _db.ChangePassword(password, userId);
+                _db.ChangePassword(userId, password);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);

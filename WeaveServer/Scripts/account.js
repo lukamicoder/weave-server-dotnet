@@ -148,7 +148,6 @@ function changePassword() {
         cache: false,
         data: [{ name: 'password', value: pass}],
         type: 'POST',
-        dataType: 'json',
         success: function (data) {
             $('#dialog').dialog("close");
         },
@@ -163,7 +162,6 @@ function deleteUser() {
         url: "/Account/DeleteUser",
         cache: false,
         type: 'POST',
-        dataType: 'json',
         success: function (data) {
             $('#dialog').dialog("close");
             window.location = '/Account/Logout';
@@ -179,7 +177,6 @@ function clearUserData() {
         url: "/Account/ClearUserData",
         cache: false,
         type: 'POST',
-        dataType: 'json',
         success: function (data) {
             loadUserTable();
             $('#dialog').dialog("close");

@@ -18,12 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-using System.Collections.Specialized;
-
 namespace WeaveCore.Models {
     public class WeaveRequest {
+        public RequestMethod RequestMethod { get; set; }
         public long RequestTime { get; set; }
-        public string Password { get; set; }
+
+        public string LoginPassword { get; set; }
+        public string LoginName { get; set; }
+        public long UserId { get; set; }
+
         public string Url { get; set; }
         public string Version { get; set; }
         public string UserName { get; set; }
@@ -32,11 +35,7 @@ namespace WeaveCore.Models {
         public string Id { get; set; }
         public string Collection { get; set; }
 
-        public RequestMethod RequestMethod { get; set; }
-        public NameValueCollection ServerVariables { get; set; }
-        public NameValueCollection QueryString { get; set; }
         public double? HttpX { get; set; }
-        public string Content { get; set; }
         public bool IsValid { get; set; }
         public WeaveErrorCodes ErrorMessage { get; set; }
         public int ErrorCode { get; set; }

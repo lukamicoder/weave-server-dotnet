@@ -1,11 +1,16 @@
 ﻿using System.Web.Mvc;
 using System.Web.Routing;
+using NLog;
+using NLog.Config;
+using NLog.Targets;
 
 namespace WeaveServer {
     // Note: For instructions on enabling IIS6 or IIS7 classic mode, 
     // visit http://go.microsoft.com/?LinkId=9394801
 
     public class MvcApplication : System.Web.HttpApplication {
+        private static Logger _logger = LogManager.GetCurrentClassLogger();
+
         public static void RegisterGlobalFilters(GlobalFilterCollection filters) {
             filters.Add(new HandleErrorAttribute());
         }
@@ -47,6 +52,16 @@ namespace WeaveServer {
         }
 
         protected void Application_Start() {
+#if DEBUG
+            var config = new LoggingConfiguration();
+            var target = new DebuggerTarget();
+            config.AddTarget("debugger", target);
+            config.LoggingRules.Add(new LoggingRule("*", LogLevel.Trace, target));
+            LogManager.Configuration = config;
+#endif
+
+            _logger.Info("Application started.");
+
             AreaRegistration.RegisterAllAreas();
 
             RegisterGlobalFilters(GlobalFilters.Filters);
