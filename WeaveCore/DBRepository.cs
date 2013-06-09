@@ -46,13 +46,13 @@ namespace WeaveCore {
         private readonly object _lock = new object();
 
         public DBRepository() {
-            if (string.IsNullOrEmpty(_connString) || _databaseType == DatabaseType.NA) {
+            if (String.IsNullOrEmpty(_connString) || _databaseType == DatabaseType.NA) {
                 _databaseType = ((WeaveConfigurationSection)ConfigurationManager.GetSection("WeaveDatabase")).DatabaseType;
 
                 if (_databaseType == DatabaseType.SQLite) {
                     string dir = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
 
-                    if (string.IsNullOrEmpty(dir)) {
+                    if (String.IsNullOrEmpty(dir)) {
                         dir = AppDomain.CurrentDomain.BaseDirectory;
                     }
 
@@ -116,7 +116,7 @@ namespace WeaveCore {
             IDbConnection connection = null;
 
             switch (_databaseType) {
-                case DatabaseType.SQLite:       
+                case DatabaseType.SQLite:
 #if Mono
                     connection = new SqliteConnection(_connString);
 #else
@@ -125,19 +125,21 @@ namespace WeaveCore {
                     break;
                 case DatabaseType.SQLServer:
                     connection = new SqlConnection(_connString);
-                    connection.Open();
                     break;
                 case DatabaseType.MySQL:
                     connection = new MySqlConnection(_connString);
-                    connection.Open();
                     break;
+            }
+
+            if (connection != null) {
+                connection.Open();
             }
 
             return connection;
         }
 
         #region Admin
-        public long AuthenticateUser(string userName, string password) {
+        public long AuthenticateUser(string userName, string hash) {
             long id = 0;
 
             string sql;
@@ -145,16 +147,16 @@ namespace WeaveCore {
                 sql = @"SELECT Users.UserId 
 						FROM Users 
 						WHERE Users.Email = @username 
-                        AND Md5 = @md5";
+                            AND Md5 = @md5";
             } else {
                 sql = @"SELECT Users.UserId 
 						FROM Users 
 						WHERE Users.UserName = @username 
-                        AND Md5 = @md5";
+                            AND Md5 = @md5";
             }
 
             using (var conn = GetConnection()) {
-                var result = conn.Query<long?>(sql, new { username = userName, md5 = Helper.ConvertToHash(password) }).SingleOrDefault();
+                var result = conn.Query<long?>(sql, new { username = userName, md5 = hash }).SingleOrDefault();
                 if (result != null) {
                     id = result.Value;
                 }
@@ -182,7 +184,7 @@ namespace WeaveCore {
                 list = conn.Query<dynamic>(sql).Select(u => new User {
                     UserId = u.UserId,
                     UserName = String.IsNullOrEmpty(u.Email) ? u.UserName : u.Email,
-                    Payload = Helper.FormatPayloadSize(u.Total),
+                    Payload = FormatPayloadSize(u.Total),
                     DateMin = u.DateMin == null ? 0 : u.DateMin * 1000,
                     DateMax = u.DateMax == null ? 0 : u.DateMax * 1000
                 }).ToList();
@@ -209,7 +211,7 @@ namespace WeaveCore {
                 user = conn.Query<dynamic>(sql, new { userId }).Select(u => new User {
                     UserId = userId,
                     UserName = String.IsNullOrEmpty(u.Email) ? u.UserName : u.Email,
-                    Payload = Helper.FormatPayloadSize(u.Total),
+                    Payload = FormatPayloadSize(u.Total),
                     DateMin = u.DateMin == null ? 0 : u.DateMin * 1000,
                     DateMax = u.DateMax == null ? 0 : u.DateMax * 1000
                 }).SingleOrDefault();
@@ -234,14 +236,14 @@ namespace WeaveCore {
                     .Select(item => new CollectionData {
                         Collection = CollectionDictionary.GetValue(item.Collection),
                         Count = item.Count,
-                        Payload = Helper.FormatPayloadSize(item.Total)
+                        Payload = FormatPayloadSize(item.Total)
                     }).ToList();
             }
 
             return list;
         }
 
-        public void CreateUser(string userName, string password, string email) {
+        public void CreateUser(string userName, string hash, string email) {
             if (String.IsNullOrEmpty(userName)) {
                 return;
             }
@@ -250,7 +252,7 @@ namespace WeaveCore {
                                    VALUES (@userName, @email, @md5)";
 
             using (var conn = GetConnection()) {
-                conn.Execute(sql, new { userName, email, md5 = Helper.ConvertToHash(password) });
+                conn.Execute(sql, new { userName, email, md5 = hash });
             }
         }
 
@@ -299,15 +301,17 @@ namespace WeaveCore {
             }
         }
 
-        public void ChangePassword(long userId, string password) {
-            if (String.IsNullOrEmpty(password)) {
+        public void ChangePassword(long userId, string hash) {
+            if (String.IsNullOrEmpty(hash)) {
                 return;
             }
 
-            const string sql = @"UPDATE Users SET Md5 = @md5 WHERE UserId = @userid";
+            const string sql = @"UPDATE Users 
+                                 SET Md5 = @md5 
+                                 WHERE UserId = @userid";
 
             using (var conn = GetConnection()) {
-                conn.Execute(sql, new { md5 = Helper.ConvertToHash(password), userid = userId });
+                conn.Execute(sql, new { md5 = hash, userid = userId });
             }
         }
 
@@ -632,5 +636,21 @@ namespace WeaveCore {
             return wboList;
         }
         #endregion
+
+        private string FormatPayloadSize(decimal? amount) {
+            if (amount == null) {
+                return "";
+            }
+            string output = "";
+
+            double total = (Convert.ToDouble(amount) * 1000) / 1024 / 1024;
+            if (total >= 1024) {
+                output = Math.Round((total / 1024), 1) + "MB";
+            } else if (total >= 0) {
+                output = Math.Round(total, 1) + "KB";
+            }
+
+            return output;
+        }
     }
 }

@@ -57,7 +57,7 @@ namespace WeaveCore {
             }
 
             try {
-                _request.UserId = _db.AuthenticateUser(_request.UserName, _request.LoginPassword);
+                _request.UserId = _db.AuthenticateUser(_request.UserName, Helper.ConvertToHash(_request.LoginPassword));
                 if (_request.UserId == 0) {
                     _response.Response = SetError("Authentication failed", 401);
                     return _response;
@@ -433,7 +433,7 @@ namespace WeaveCore {
         private void RequestPost() {
             if (_request.Function == RequestFunction.Password) {
                 try {
-                    _db.ChangePassword(_request.UserId, Body);
+                    _db.ChangePassword(_request.UserId, Helper.ConvertToHash(Body));
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);

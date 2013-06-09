@@ -31,7 +31,7 @@ namespace WeaveCore {
         }
 
         public long AuthenticateUser(string userName, string password) {
-            return _db.AuthenticateUser(userName, password);
+            return _db.AuthenticateUser(userName, Helper.ConvertToHash(password));
         }
 
         public IEnumerable<User> GetUserList() {
@@ -78,7 +78,7 @@ namespace WeaveCore {
                 msg = "Username already exists.";
             } else {
                 try {
-                    _db.CreateUser(userName, password, email);
+                    _db.CreateUser(userName, Helper.ConvertToHash(password), email);
                     RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Info);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
@@ -114,7 +114,7 @@ namespace WeaveCore {
 
         public string ChangePassword(long userId, string password) {
             try {
-                _db.ChangePassword(userId, password);
+                _db.ChangePassword(userId, Helper.ConvertToHash(password));
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);

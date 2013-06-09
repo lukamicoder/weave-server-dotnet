@@ -46,21 +46,5 @@ namespace WeaveCore {
 
             return sb.ToString();
         }
-
-        public static string FormatPayloadSize(decimal? amount) {
-            if (amount == null) {
-                return "";
-            }
-            string output = "";
-      
-            double total = (Convert.ToDouble(amount) * 1000) / 1024 / 1024;
-            if (total >= 1024) {
-                output = Math.Round((total / 1024), 1) + "MB";
-            } else if (total >= 0) {
-                output = Math.Round(total, 1) + "KB";
-            }
-
-            return output;
-        }
     }
 }
