@@ -333,10 +333,10 @@ namespace WeaveCore {
             }
 
             const string sql = @"SELECT MAX(Modified) 
-						       FROM Wbos
-						       WHERE UserId = @userid
-                               AND Ttl > @ttl
-						       AND Collection = @collection";
+						        FROM Wbos
+						        WHERE UserId = @userid
+                                    AND Ttl > @ttl
+						            AND Collection = @collection";
 
             using (var conn = GetConnection()) {
                 result = conn.Query<double>(sql, new { userid = userId, ttl = _timeNow, collection = CollectionDictionary.GetKey(collection) })
@@ -367,10 +367,10 @@ namespace WeaveCore {
             Dictionary<string, long> dic;
 
             const string sql = @"SELECT Collection, COUNT(*) AS Count 
-						       FROM Wbos
-						       WHERE UserId = @userid
-                               AND Ttl > @ttl
-						       GROUP BY Collection";
+						        FROM Wbos
+						        WHERE UserId = @userid
+                                    AND Ttl > @ttl
+						        GROUP BY Collection";
 
             using (var conn = GetConnection()) {
                 dic = conn.Query<dynamic>(sql, new { userid = userId, ttl = _timeNow })
@@ -384,10 +384,10 @@ namespace WeaveCore {
             long result;
 
             const string sql = @"SELECT SUM(Wbos.PayloadSize) 
-						       FROM Wbos
-						       INNER JOIN Users on Wbos.UserId = Users.UserId
-						       WHERE Users.UserId = @userid
-                               AND Ttl > @ttl";
+						        FROM Wbos
+						            INNER JOIN Users on Wbos.UserId = Users.UserId
+						        WHERE Users.UserId = @userid
+                                    AND Ttl > @ttl";
 
             using (var conn = GetConnection()) {
                 result = conn.Query<long>(sql, new { userid = userId, ttl = _timeNow }).SingleOrDefault();
@@ -400,10 +400,10 @@ namespace WeaveCore {
             Dictionary<string, int> dic;
 
             const string sql = @"SELECT Collection, SUM(PayloadSize) AS Total
-						       FROM Wbos
-						       WHERE UserId = @userid
-                               AND Ttl > @ttl
-						       GROUP BY Collection";
+						        FROM Wbos
+						        WHERE UserId = @userid
+                                    AND Ttl > @ttl
+						        GROUP BY Collection";
 
             using (var conn = GetConnection()) {
                 dic = conn.Query<dynamic>(sql, new { userid = userId, ttl = _timeNow })
@@ -489,8 +489,8 @@ namespace WeaveCore {
         public void DeleteWbo(long userId, string id, string collection) {
             const string sql = @"DELETE FROM Wbos
 						       WHERE UserId = @userid
-						       AND Collection = @collection 
-						       AND Id = @id";
+						        AND Collection = @collection 
+						        AND Id = @id";
 
             using (var conn = GetConnection()) {
                 conn.Execute(sql, new { userid = userId, id = id, collection = CollectionDictionary.GetKey(collection) });
@@ -504,7 +504,7 @@ namespace WeaveCore {
             using (var conn = GetConnection()) {
                 sb.Append(@"DELETE FROM Wbos 
 						    WHERE UserId = @userid
-							AND Collection = @collection");
+							    AND Collection = @collection");
 
                 var param = new DynamicParameters();
                 param.Add("UserId", userId);

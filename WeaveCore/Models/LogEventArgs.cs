@@ -19,9 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System;
-using WeaveCore.Models;
 
-namespace WeaveCore {
+namespace WeaveCore.Models {
     public class LogEventArgs : EventArgs {
         public string Message { get; set; }
         public LogType Type { get; set; }
@@ -29,22 +28,6 @@ namespace WeaveCore {
         public LogEventArgs(string message, LogType type) {
             Message = message;
             Type = type;
-        }
-    }
-
-    public abstract class LogEventBase {
-        public delegate void WeaveLogEventHandler(object sender, LogEventArgs e);
-        public event WeaveLogEventHandler LogEvent;
-
-        protected void RaiseLogEvent(object source, string msg, LogType type) {
-            OnLogEvent(source, new LogEventArgs(msg, type));
-        }
-
-        protected void OnLogEvent(object source, LogEventArgs args) {
-            WeaveLogEventHandler tmp = LogEvent;
-            if (tmp != null) {
-                tmp(source, args);
-            }
         }
     }
 }

@@ -20,24 +20,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using WeaveCore.Models;
 
 namespace WeaveCore {
-    public class WeaveAdmin : LogEventBase {
-        readonly DBRepository _db;
-
+    public class WeaveAdmin : WeaveBase {
         public WeaveAdmin() {
-            _db = new DBRepository();
+            DB = new DBRepository();
         }
 
         public long AuthenticateUser(string userName, string password) {
-            return _db.AuthenticateUser(userName, Helper.ConvertToHash(password));
+            return DB.AuthenticateUser(userName, ConvertToHash(password));
         }
 
         public IEnumerable<User> GetUserList() {
             IEnumerable<User> list = null;
             try {
-                list = _db.GetUserList();
+                list = DB.GetUserList();
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
             }
@@ -48,7 +47,7 @@ namespace WeaveCore {
         public User GetUser(long userId) {
             User user = null;
             try {
-                user = _db.GetUser(userId);
+                user = DB.GetUser(userId);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
             }
@@ -60,7 +59,7 @@ namespace WeaveCore {
             IEnumerable<CollectionData> list = null;
 
             try {
-                list = _db.GetUserDetails(userId);
+                list = DB.GetUserDetails(userId);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
             }
@@ -72,13 +71,13 @@ namespace WeaveCore {
             string msg = "";
             if (String.IsNullOrEmpty(userName) || String.IsNullOrEmpty(password)) {
                 msg = "Username and password cannot be blank.";
-            } else if (!userName.Contains("@") && !Helper.IsUserNameValid(userName)) {
+            } else if (!userName.Contains("@") && !IsUserNameValid(userName)) {
                 msg = "Username can only consist of characters (A-Z or a-z), numbers (0-9), and these special characters: _ -.";
             } else if (!IsUserNameUnique(userName)) {
                 msg = "Username already exists.";
             } else {
                 try {
-                    _db.CreateUser(userName, Helper.ConvertToHash(password), email);
+                    DB.CreateUser(userName, ConvertToHash(password), email);
                     RaiseLogEvent(this, String.Format("{0} user account has been created.", String.IsNullOrEmpty(email) ? userName : email), LogType.Info);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
@@ -90,7 +89,7 @@ namespace WeaveCore {
         }
 
         public bool IsUserNameUnique(string userName) {
-            return _db.IsUserNameUnique(userName);
+            return DB.IsUserNameUnique(userName);
         }
 
         public string DeleteUser(long userId) {
@@ -98,8 +97,8 @@ namespace WeaveCore {
             string userName = "";
 
             try {
-                userName = _db.GetUserName(userId);
-                _db.DeleteUser(userId);
+                userName = DB.GetUserName(userId);
+                DB.DeleteUser(userId);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 msg = "There was an error on deleting user.";
@@ -114,7 +113,7 @@ namespace WeaveCore {
 
         public string ChangePassword(long userId, string password) {
             try {
-                _db.ChangePassword(userId, Helper.ConvertToHash(password));
+                DB.ChangePassword(userId, ConvertToHash(password));
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);
@@ -125,13 +124,23 @@ namespace WeaveCore {
 
         public string ClearUserData(long userId) {
             try {
-                _db.ClearUserData(userId);
+                DB.ClearUserData(userId);
             } catch (Exception x) {
                 RaiseLogEvent(this, x.ToString(), LogType.Error);
                 return String.Format("Error: {0}", x.Message);
             }
 
             return "";
+        }
+
+        private bool IsUserNameValid(string text) {
+            var regex = new Regex(@"[^a-zA-Z0-9._-]");
+
+            if (string.IsNullOrEmpty(text) || text.Length > 32) {
+                return false;
+            }
+
+            return !regex.IsMatch(text);
         }
     }
 }

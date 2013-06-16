@@ -80,10 +80,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\CollectionData.cs" />
+    <Compile Include="Models\LogEventArgs.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WeaveResponse.cs" />
     <Compile Include="Models\ResultList.cs" />
     <Compile Include="DBRepository.cs" />
+    <Compile Include="WeaveBase.cs" />
     <Compile Include="WeaveConfigurationSection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Models\CollectionDictionary.cs" />
@@ -91,9 +93,7 @@
     <Compile Include="WeaveAdmin.cs" />
     <Compile Include="Models\WeaveBasicObject.cs" />
     <Compile Include="Models\Enums.cs" />
-    <Compile Include="LogEventBase.cs" />
     <Compile Include="Models\WeaveRequest.cs" />
-    <Compile Include="Helper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config">

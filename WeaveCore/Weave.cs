@@ -27,8 +27,7 @@ using Newtonsoft.Json;
 using WeaveCore.Models;
 
 namespace WeaveCore {
-    public class Weave : LogEventBase {
-        readonly DBRepository _db;
+    public class Weave : WeaveBase {
         private WeaveResponse _response;
         private WeaveRequest _request;
 
@@ -37,7 +36,7 @@ namespace WeaveCore {
         public NameValueCollection Headers { get; set; }
 
         public Weave() {
-            _db = new DBRepository();
+            DB = new DBRepository();
         }
 
         public WeaveResponse ProcessRequest(Uri url, RequestMethod method) {
@@ -57,7 +56,9 @@ namespace WeaveCore {
             }
 
             try {
-                _request.UserId = _db.AuthenticateUser(_request.UserName, Helper.ConvertToHash(_request.LoginPassword));
+                if (!string.IsNullOrEmpty(_request.UserName) && !string.IsNullOrEmpty(_request.LoginPassword)) {
+                    _request.UserId = DB.AuthenticateUser(_request.UserName, ConvertToHash(_request.LoginPassword));
+                }
                 if (_request.UserId == 0) {
                     _response.Response = SetError("Authentication failed", 401);
                     return _response;
@@ -264,16 +265,16 @@ namespace WeaveCore {
             try {
                 switch (_request.Collection) {
                     case "quota":
-                        _response.Response = JsonConvert.SerializeObject(new[] { _db.GetStorageTotal(_request.UserId) });
+                        _response.Response = JsonConvert.SerializeObject(new[] { DB.GetStorageTotal(_request.UserId) });
                         break;
                     case "collections":
-                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithTimestamps(_request.UserId));
+                        _response.Response = JsonConvert.SerializeObject(DB.GetCollectionListWithTimestamps(_request.UserId));
                         break;
                     case "collection_counts":
-                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionListWithCounts(_request.UserId));
+                        _response.Response = JsonConvert.SerializeObject(DB.GetCollectionListWithCounts(_request.UserId));
                         break;
                     case "collection_usage":
-                        _response.Response = JsonConvert.SerializeObject(_db.GetCollectionStorageTotals(_request.UserId));
+                        _response.Response = JsonConvert.SerializeObject(DB.GetCollectionStorageTotals(_request.UserId));
                         break;
                     default:
                         _response.Response = SetError(WeaveErrorCodes.InvalidProtocol, 400);
@@ -291,7 +292,7 @@ namespace WeaveCore {
 
             if (_request.Id != null) {
                 try {
-                    wboList = _db.GetWboList(_request.UserId, _request.Collection, _request.Id, true);
+                    wboList = DB.GetWboList(_request.UserId, _request.Collection, _request.Id, true);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -319,7 +320,7 @@ namespace WeaveCore {
                 }
 
                 try {
-                    wboList = _db.GetWboList(_request.UserId, _request.Collection, null, full == "1",
+                    wboList = DB.GetWboList(_request.UserId, _request.Collection, null, full == "1",
                                                     QuerySegments["newer"],
                                                     QuerySegments["older"],
                                                     QuerySegments["sort"],
@@ -393,7 +394,7 @@ namespace WeaveCore {
         }
 
         private void RequestPut() {
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
+            if (_request.HttpX != null && DB.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
                 _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
@@ -414,7 +415,7 @@ namespace WeaveCore {
 
             if (wbo.Validate()) {
                 try {
-                    _db.SaveWbo(_request.UserId, wbo);
+                    DB.SaveWbo(_request.UserId, wbo);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -433,7 +434,7 @@ namespace WeaveCore {
         private void RequestPost() {
             if (_request.Function == RequestFunction.Password) {
                 try {
-                    _db.ChangePassword(_request.UserId, Helper.ConvertToHash(Body));
+                    DB.ChangePassword(_request.UserId, ConvertToHash(Body));
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -444,7 +445,7 @@ namespace WeaveCore {
                 return;
             }
 
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
+            if (_request.HttpX != null && DB.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
                 _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
@@ -478,7 +479,7 @@ namespace WeaveCore {
 
             if (wboList.Count > 0) {
                 try {
-                    _db.SaveWboList(_request.UserId, wboList, resultList);
+                    DB.SaveWboList(_request.UserId, wboList, resultList);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -490,14 +491,14 @@ namespace WeaveCore {
         }
 
         private void RequestDelete() {
-            if (_request.HttpX != null && _db.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
+            if (_request.HttpX != null && DB.GetMaxTimestamp(_request.UserId, _request.Collection) <= _request.HttpX.Value) {
                 _response.Response = SetError(WeaveErrorCodes.NoOverwrite, 412);
                 return;
             }
 
             if (_request.Id != null) {
                 try {
-                    _db.DeleteWbo(_request.UserId, _request.Collection, _request.Id);
+                    DB.DeleteWbo(_request.UserId, _request.Collection, _request.Id);
                 } catch (Exception x) {
                     RaiseLogEvent(this, x.ToString(), LogType.Error);
                     _response.Response = SetError("Database unavailable", 503);
@@ -507,7 +508,7 @@ namespace WeaveCore {
                 _response.Response = JsonConvert.SerializeObject(_request.RequestTime);
             } else if (_request.Collection != null) {
                 try {
-                    _db.DeleteWboList(_request.UserId, _request.Collection, null,
+                    DB.DeleteWboList(_request.UserId, _request.Collection, null,
                                 QuerySegments["newer"],
                                 QuerySegments["older"],
                                 QuerySegments["sort"],
