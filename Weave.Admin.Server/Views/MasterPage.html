@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Weave Server.NET</title>
+    <link rel="stylesheet" type="text/css" href="../Content/Site.css" />
+    <script type="text/javascript" src="../Scripts/jquery-2.0.2.min.js"></script>
+    <script type="text/javascript" src="../Scripts/jquery-ui-1.10.3.custom.min.js"></script>
+    <script type="text/javascript" src="../Scripts/helper.js"></script>
+</head>
+<body>
+    <div id="wrapper">
+        <div id="header">
+            <div id="logo">Weave Server.NET</div>
+            @If.Model.IsAuthenticated
+                <div id="logout">
+                    You are logged in as <b>@Model.UserName</b>.&nbsp;&nbsp;<a href="../Logout">Logout</a>
+                </div>
+            @EndIf
+        </div>
+        <div id="content">
+            @Section['Content']
+            <div id="dialog">
+                <div id="dialogContent"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
