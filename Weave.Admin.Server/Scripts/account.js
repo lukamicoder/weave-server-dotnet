@@ -148,7 +148,6 @@ function changePassword() {
         cache: false,
         data: [{ name: 'password', value: pass}],
         type: 'POST',
-        dataType: 'json',
         success: function (data) {
             $('#dialog').dialog("close");
         },
