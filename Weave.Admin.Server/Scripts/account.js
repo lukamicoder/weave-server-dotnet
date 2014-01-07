@@ -29,7 +29,7 @@ $(document).ready(function () {
         closeText: ''
     });
 
-    if ("undefined" == typeof (userTable)) {
+    if ("undefined" === typeof (userTable)) {
         columns = [];
         columns[1] = ["Payload", "tdLoad", "tdLoad"];
         columns[2] = ["First Sync", "tdDate", "tdDate"];
@@ -39,7 +39,7 @@ $(document).ready(function () {
         userTable = new JSONTable('tableContainer', 'userTable', columns);
     }
 
-    if ("undefined" == typeof (detailsTable)) {
+    if ("undefined" === typeof (detailsTable)) {
         columns = [];
         columns[1] = ["Collection", "tdCell", "tdCell"];
         columns[2] = ["Count", "tdLoad", "tdLoad"];
@@ -108,7 +108,7 @@ function showDetails() {
         type: 'GET',
         dataType: 'json',
         success: function (data) {
-            var rows = new Array();
+            var rows = new [];
             if (data !== undefined) {
                 for (var i = 0; i < data.length; i++) {
                     var row;
@@ -135,9 +135,9 @@ function showDetails() {
 function changePassword() {
     var pass = $('#password')[0].value;
     var pass1 = $('#password1')[0].value;
-    if (pass == '' && pass1 == '') {
+    if (pass === '' && pass1 === '') {
         return;
-    } else if (pass != pass1) {
+    } else if (pass !== pass1) {
         $('#error')[0].style.display = "block";
         $('#error')[0].innerHTML = "Passwords do not match.";
         return;
@@ -148,7 +148,7 @@ function changePassword() {
         cache: false,
         data: [{ name: 'password', value: pass}],
         type: 'POST',
-        success: function (data) {
+        success: function () {
             $('#dialog').dialog("close");
         },
         error: function (data) {
@@ -162,7 +162,7 @@ function deleteUser() {
         url: "/Account/DeleteUser",
         cache: false,
         type: 'POST',
-        success: function (data) {
+        success: function () {
             $('#dialog').dialog("close");
             window.location = '/Logout';
         },
@@ -177,7 +177,7 @@ function clearUserData() {
         url: "/Account/ClearUserData",
         cache: false,
         type: 'POST',
-        success: function (data) {
+        success: function () {
             loadUserTable();
             $('#dialog').dialog("close");
         },
@@ -194,15 +194,15 @@ function loadUserTable() {
         type: 'GET',
         dataType: 'json',
         success: function (users) {
-            var rows = new Array();
+            var rows = new [];
+            var row;
             if (users !== undefined) {
-                if (users.length == 0) {
+                if (users.length === 0) {
                     row = ["&nbsp;", "", "", "", ""];
                     rows.push(row);
                 } else {
                     for (var i = 0; i < users.length; i++) {
                         if (users[i] !== null) {
-                            var id = users[i].UserId;
                             var size = users[i].Payload;
 
                             var datemin = "";
@@ -217,7 +217,7 @@ function loadUserTable() {
                                 datemax = datemax.format();
                             }
 
-                            var detail = ""; ;
+                            var detail = "";
                             if (datemax !== "") {
                                 detail = document.createElement("a");
                                 $(detail).attr('href', "javascript:showDetails()");
@@ -233,7 +233,7 @@ function loadUserTable() {
 
                             row = [size, datemin, datemax, detail, clear];
                         } else {
-                            var row = ["&nbsp;", "", "", "", ""];
+                            row = ["&nbsp;", "", "", "", ""];
                         }
 
                         rows.push(row);
