@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 using System.Collections.Generic;
+using System.Configuration;
 using System.Dynamic;
 using Nancy;
 using Nancy.Authentication.Forms;
@@ -27,13 +28,18 @@ using NLog;
 using Weave.Core;
 using Weave.Core.Models;
 
-namespace Weave.Admin.Server.Modules {
+namespace Weave.Server.Admin.Modules {
 	public class AccountModule : NancyModule {
 		private static Logger _logger = LogManager.GetCurrentClassLogger();
 
 		WeaveAdmin _weaveAdmin = new WeaveAdmin();
 
 		public AccountModule() {
+#if !DEBUG
+			if (((WeaveConfigurationSection)ConfigurationManager.GetSection("weave")).EnableSsl) {
+				this.RequiresHttps();
+			}
+#endif
 			_weaveAdmin.LogEvent += OnLogEvent;
 
 			this.RequiresAuthentication();

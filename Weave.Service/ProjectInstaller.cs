@@ -1,9 +1,9 @@
-﻿/* 
+﻿/*
 Weave Server.NET <http://code.google.com/p/weave-server-dotnet/>
 Copyright (C) 2013 Karoly Lukacs
 
 Based on code created by Mozilla Labs.
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -21,11 +21,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System.ComponentModel;
 using System.Configuration.Install;
 
-namespace WeaveService {
-    [RunInstaller(true)]
-    public partial class ProjectInstaller : Installer {
-        public ProjectInstaller() {
-            InitializeComponent();
-        }
-    }
+namespace Weave.Service {
+	[RunInstaller(true)]
+	public partial class ProjectInstaller : Installer {
+		public ProjectInstaller() {
+			InitializeComponent();
+		}
+	}
 }

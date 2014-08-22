@@ -1,9 +1,9 @@
-﻿/* 
+﻿/*
 Weave Server.NET <http://code.google.com/p/weave-server-dotnet/>
 Copyright (C) 2013 Karoly Lukacs
 
 Based on code created by Mozilla Labs.
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -29,31 +29,31 @@ using Nancy.Security;
 using Weave.Core.Models;
 
 namespace Weave.Server {
-    public class WeaveModule : NancyModule {
-        private static Logger _logger = LogManager.GetCurrentClassLogger();
+	public class WeaveModule : NancyModule {
+		private static Logger _logger = LogManager.GetCurrentClassLogger();
 
-        public WeaveModule() {
+		public WeaveModule() {
 #if !DEBUG
-            if (ConfigurationManager.AppSettings["EnableSsl"].ToLower() == "true") {
-                this.RequiresHttps();
-            }
+			if (((WeaveConfigurationSection)ConfigurationManager.GetSection("weave")).EnableSsl) {
+				this.RequiresHttps();
+			}
 #endif
 
-            const string route = "/{param1?}/{param2?}/{param3?}/{param4?}/{param5?}";
+			const string route = "/{param1?}/{param2?}/{param3?}/{param4?}/{param5?}";
 
 			Get[route] = parameters => GetWeaveResponse();
 			Post[route] = parameters => GetWeaveResponse();
 			Put[route] = parameters => GetWeaveResponse();
 			Delete[route] = parameters => GetWeaveResponse();
 
-            After += ctx => {
-                if (ctx.Response.StatusCode == HttpStatusCode.NotFound || ctx.Response.StatusCode == HttpStatusCode.Unauthorized) {
-                    var code = ctx.Response.StatusCode;
-                    ctx.Response = "";
-                    ctx.Response.StatusCode = code;
-                }
-            };
-        }
+			After += ctx => {
+				if (ctx.Response.StatusCode == HttpStatusCode.NotFound || ctx.Response.StatusCode == HttpStatusCode.Unauthorized) {
+					var code = ctx.Response.StatusCode;
+					ctx.Response = "";
+					ctx.Response.StatusCode = code;
+				}
+			};
+		}
 
 		private Response GetWeaveResponse() {
 			var weave = new Weave.Core.Weave();
@@ -63,18 +63,18 @@ namespace Weave.Server {
 			foreach (var name in Request.Query.GetDynamicMemberNames()) {
 				query.Add(name, Request.Query[name]);
 			}
-            weave.QuerySegments = query;
+			weave.QuerySegments = query;
 
-            var headers = new NameValueCollection();
-            foreach (var header in Request.Headers) {
-                if (header.Value != null) {
-                    headers.Add(header.Key, header.Value.FirstOrDefault());
-                }
-            }
-            weave.Headers = headers;
+			var headers = new NameValueCollection();
+			foreach (var header in Request.Headers) {
+				if (header.Value != null) {
+					headers.Add(header.Key, header.Value.FirstOrDefault());
+				}
+			}
+			weave.Headers = headers;
 
-            RequestMethod method;
-            Enum.TryParse(Request.Method, out method);
+			RequestMethod method;
+			Enum.TryParse(Request.Method, out method);
 
 			weave.Body = GetContent();
 
@@ -86,9 +86,9 @@ namespace Weave.Server {
 				foreach (var pair in response.Headers) {
 					nancyResponse.Headers.Add(pair.Key, pair.Value);
 
-                    if (pair.Key == "Content-type") {
-                        nancyResponse.ContentType = pair.Value;
-                    }
+					if (pair.Key == "Content-type") {
+						nancyResponse.ContentType = pair.Value;
+					}
 				}
 			}
 
@@ -113,24 +113,24 @@ namespace Weave.Server {
 			return System.Text.Encoding.Default.GetString(buffer);
 		}
 
-        private void OnLogEvent(object source, LogEventArgs args) {
-            var level = LogLevel.Off;
-            switch (args.Type) {
-                case LogType.Error:
-                    level = LogLevel.Error;
-                    break;
-                case LogType.Info:
-                    level = LogLevel.Info;
-                    break;
-                case LogType.Warning:
-                    level = LogLevel.Warn;
-                    break;
-                case LogType.Debug:
-                    level = LogLevel.Debug;
-                    break;
-            }
+		private void OnLogEvent(object source, LogEventArgs args) {
+			var level = LogLevel.Off;
+			switch (args.Type) {
+				case LogType.Error:
+					level = LogLevel.Error;
+					break;
+				case LogType.Info:
+					level = LogLevel.Info;
+					break;
+				case LogType.Warning:
+					level = LogLevel.Warn;
+					break;
+				case LogType.Debug:
+					level = LogLevel.Debug;
+					break;
+			}
 
-            _logger.Log(level, args.Message);
-        }
+			_logger.Log(level, args.Message);
+		}
 	}
 }

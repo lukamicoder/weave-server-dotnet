@@ -113,7 +113,7 @@ function showDetails() {
                 for (var i = 0; i < data.length; i++) {
                     var row;
                     if (data[i] !== null) {
-                        row = [data[i].Collection, data[i].Count, data[i].Payload];
+                        row = [data[i].collection, data[i].count, data[i].payload];
                     } else {
                         row = ["", "", ""];
                     }
@@ -203,17 +203,17 @@ function loadUserTable() {
                 } else {
                     for (var i = 0; i < users.length; i++) {
                         if (users[i] !== null) {
-                            var size = users[i].Payload;
+                            var size = users[i].payload;
 
                             var datemin = "";
-                            if (users[i].DateMin > 0) {
-                                datemin = new Date(users[i].DateMin);
+                            if (users[i].dateMin > 0) {
+                                datemin = new Date(users[i].dateMin);
                                 datemin = datemin.format();
                             }
 
                             var datemax = "";
-                            if (users[i].DateMax > 0) {
-                                datemax = new Date(users[i].DateMax);
+                            if (users[i].dateMax > 0) {
+                                datemax = new Date(users[i].dateMax);
                                 datemax = datemax.format();
                             }
 

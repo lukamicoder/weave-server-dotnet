@@ -24,7 +24,6 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using NLog;
 using Nancy;
 using Nancy.Authentication.Forms;
 using Nancy.Bootstrapper;
@@ -34,11 +33,14 @@ using Nancy.Diagnostics;
 using Nancy.Responses;
 using Nancy.TinyIoc;
 using Nancy.ViewEngines;
-using Weave.Admin.Server.Modules;
+using NLog;
+using Weave.Core.Models;
+using Weave.Server.Admin.Modules;
 
-namespace Weave.Admin.Server {
+namespace Weave.Server.Admin {
 	public class AdminBootStrapper : DefaultNancyBootstrapper {
 		private static Logger _logger = LogManager.GetCurrentClassLogger();
+		WeaveConfigurationSection _config = (WeaveConfigurationSection)ConfigurationManager.GetSection("weave");
 		private byte[] _favicon;
 
 		protected override byte[] FavIcon {
@@ -48,7 +50,7 @@ namespace Weave.Admin.Server {
 		}
 
 		private byte[] LoadFavIcon() {
-            using (var resourceStream = GetType().Assembly.GetManifestResourceStream("Weave.Admin.Server.Content.favicon.ico")) {
+			using (var resourceStream = GetType().Assembly.GetManifestResourceStream("Weave.Server.Admin.Content.favicon.ico")) {
 				if (resourceStream == null) {
 					return null;
 				}
@@ -62,23 +64,23 @@ namespace Weave.Admin.Server {
 		// Register only NancyModules found in this assembly
 		protected override IEnumerable<ModuleRegistration> Modules {
 			get {
-                return GetType().Assembly.GetTypes().Where(type => type.BaseType == typeof(NancyModule))
-                                                    .NotOfType<DiagnosticModule>()
-                                                    .Select(t => new ModuleRegistration(t)).ToArray();
+				return GetType().Assembly.GetTypes().Where(type => type.BaseType == typeof(NancyModule))
+				       .NotOfType<DiagnosticModule>()
+				       .Select(t => new ModuleRegistration(t)).ToArray();
 			}
 		}
 
 		protected override void ConfigureApplicationContainer(TinyIoCContainer container) {
 			base.ConfigureApplicationContainer(container);
 
-            ResourceViewLocationProvider.RootNamespaces.Add(Assembly.GetAssembly(typeof(LoginModule)), "Weave.Admin.Server.Views");
+			ResourceViewLocationProvider.RootNamespaces.Add(Assembly.GetAssembly(typeof(LoginModule)), "Weave.Server.Admin.Views");
 		}
 
 		protected override void ConfigureConventions(NancyConventions conventions) {
 			base.ConfigureConventions(conventions);
 
-            conventions.StaticContentsConventions.Add(AddStaticResourcePath("/Content", Assembly.GetAssembly(typeof(LoginModule)), "Weave.Admin.Server.Content"));
-            conventions.StaticContentsConventions.Add(AddStaticResourcePath("/Scripts", Assembly.GetAssembly(typeof(LoginModule)), "Weave.Admin.Server.Scripts"));
+			conventions.StaticContentsConventions.Add(AddStaticResourcePath("/Content", Assembly.GetAssembly(typeof(LoginModule)), "Weave.Server.Admin.Content"));
+			conventions.StaticContentsConventions.Add(AddStaticResourcePath("/Scripts", Assembly.GetAssembly(typeof(LoginModule)), "Weave.Server.Admin.Scripts"));
 		}
 
 		protected override NancyInternalConfiguration InternalConfiguration {
@@ -90,45 +92,41 @@ namespace Weave.Admin.Server {
 		protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines) {
 			base.ApplicationStartup(container, pipelines);
 
-            var formsAuthConfiguration = new FormsAuthenticationConfiguration();
-            formsAuthConfiguration.RedirectUrl = "~/Login";
-		    formsAuthConfiguration.UserMapper = container.Resolve<IUserMapper>();
+			var formsAuthConfiguration = new FormsAuthenticationConfiguration();
+			formsAuthConfiguration.RedirectUrl = "~/Login";
+			formsAuthConfiguration.UserMapper = container.Resolve<IUserMapper>();
 
-            var rijandelPass = ConfigurationManager.AppSettings["RijndaelPass"];
-            var hmacPass = ConfigurationManager.AppSettings["HmacPass"];
-
-            if (!String.IsNullOrEmpty(rijandelPass) && !String.IsNullOrEmpty(hmacPass)) {
-		        formsAuthConfiguration.CryptographyConfiguration = new CryptographyConfiguration(
-                    new RijndaelEncryptionProvider(new PassphraseKeyGenerator(rijandelPass, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })),
-                    new DefaultHmacProvider(new PassphraseKeyGenerator(hmacPass, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })));
-		    }
+			if (!String.IsNullOrEmpty(_config.RijndaelPass) && !String.IsNullOrEmpty(_config.HmacPass)) {
+				formsAuthConfiguration.CryptographyConfiguration = new CryptographyConfiguration(
+				    new RijndaelEncryptionProvider(new PassphraseKeyGenerator(_config.RijndaelPass, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })),
+				    new DefaultHmacProvider(new PassphraseKeyGenerator(_config.HmacPass, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 })));
+			}
 
 			FormsAuthentication.Enable(pipelines, formsAuthConfiguration);
 
-            string enableDebugging = ConfigurationManager.AppSettings["EnableDebugging"];
-            if (!String.IsNullOrEmpty(enableDebugging) && enableDebugging.ToLower() != "true") {
-                DiagnosticsHook.Disable(pipelines);
-            }
+			if (!_config.EnableDebug) {
+				DiagnosticsHook.Disable(pipelines);
+			}
 
-            _logger.Info("Weave admin webserver started.");
+			_logger.Info("Weave admin webserver started.");
 		}
 
 		protected override void RequestStartup(TinyIoCContainer container, IPipelines pipelines, NancyContext context) {
 			base.RequestStartup(container, pipelines, context);
 
 			pipelines.BeforeRequest.AddItemToStartOfPipeline(c => {
-				_logger.Trace(string.Format("Request {0} {1}", c.Request.Method, c.Request.Url));
+				_logger.Trace("Request {0} {1}", c.Request.Method, c.Request.Url);
 				return c.Response;
 			});
 
 			pipelines.AfterRequest.AddItemToEndOfPipeline(c => {
-				_logger.Trace(string.Format("Response {0} {1}", c.Response.StatusCode, c.Response.ContentType));
+				_logger.Trace("Response {0} {1}", c.Response.StatusCode, c.Response.ContentType);
 			});
 		}
 
 		void OnConfigurationBuilder(NancyInternalConfiguration conf) {
-            conf.ViewLocationProvider = typeof(ResourceViewLocationProvider);
-            conf.StatusCodeHandlers = new List<Type> { typeof(StatusCodeHandler) };
+			conf.ViewLocationProvider = typeof(ResourceViewLocationProvider);
+			conf.StatusCodeHandlers = new List<Type> { typeof(StatusCodeHandler) };
 		}
 
 		public static Func<NancyContext, string, Response> AddStaticResourcePath(string requestedPath, Assembly assembly, string namespacePrefix) {
@@ -156,7 +154,7 @@ namespace Weave.Admin.Server {
 
 		protected override DiagnosticsConfiguration DiagnosticsConfiguration {
 			get {
-			    return new DiagnosticsConfiguration { Password = ConfigurationManager.AppSettings["DiagnosticsPassword"] };
+				return new DiagnosticsConfiguration { Password = _config.DiagPassword };
 			}
 		}
 	}

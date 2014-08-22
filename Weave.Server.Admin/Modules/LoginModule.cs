@@ -18,68 +18,50 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+using System.Collections.Generic;
 using System.Dynamic;
-using NLog;
 using Nancy;
 using Nancy.Authentication.Forms;
-using Nancy.Security;
+using NLog;
 using Weave.Core;
 using Weave.Core.Models;
 
-namespace Weave.Admin.Server.Modules {
-    public class AdminModule : NancyModule {
+namespace Weave.Server.Admin.Modules {
+    public class LoginModule : NancyModule {
         private static Logger _logger = LogManager.GetCurrentClassLogger();
 
         WeaveAdmin _weaveAdmin = new WeaveAdmin();
 
-        public AdminModule() {
+        public LoginModule() {
             _weaveAdmin.LogEvent += OnLogEvent;
 
-            this.RequiresAuthentication();
-            this.RequiresClaims(new[] { "Admin" });
+            Get["/"] = parameters => Response.AsRedirect("Login");
+            Get[@"/(.*)"] = parameters => Response.AsRedirect("Login");
 
-            Get["/Admin/"] = parameters => {
+            Get["/Login"] = parameters => {
                 dynamic model = new ExpandoObject();
-                model.IsAuthenticated = true;
-                model.UserName = Context.CurrentUser.UserName;
+                model.ErrorMessage = "";
+                model.ErrorDisplay = "none";
 
-                return View["Admin", model];
+                return View["Login", model];
             };
 
-            Get["/Admin/GetUserList"] = parameters => Response.AsJson(_weaveAdmin.GetUserList());
+            Post["/Login"] = parameters => {
+                var mapper = new UserMapper(_weaveAdmin);
+                var userGuid = mapper.ValidateUser((string)Request.Form.Login, (string)Request.Form.Password);
+                if (userGuid != null) {
+                    var user = (User) mapper.GetUserFromIdentifier(userGuid.Value, Context);
+                    var list = (List<string>) user.Claims;
 
-            Get["/Admin/GetUserDetails/{userId}"] = parameters => {
-                int userId;
-                if (int.TryParse(parameters.userId, out userId)) {
-                    return Response.AsJson(_weaveAdmin.GetUserDetails(userId));
-                }
+                    Request.Query.Remove("returnUrl");
+                    return this.LoginAndRedirect(userGuid.Value, null, list.Contains("Admin") ? "Admin" : "Account");
+                } 
 
-                return HttpStatusCode.BadRequest;
-            };
+                dynamic model = new ExpandoObject();
+                model.ErrorMessage = "Incorrect username and/or password.";
+                model.ErrorDisplay = "block";
 
-            Post["/Admin/AddUser"] = parameters => {
-                string user = Request.Form["login"];
-                string pswd = Request.Form["password"];
-                string pswd1 = Request.Form["password1"];
-
-                if (pswd != pswd1) {
-                    return "Passwords do not match.";
-                }
-
-                if (user.Contains("@")) {
-                    return "Username cannot contain an \"@\" character.";
-                }
-
-                return _weaveAdmin.CreateUser(user, pswd, null);
-            };
-
-            Post["/Admin/DeleteUser/{userId}"] = parameters => {
-                int userId;
-                if (int.TryParse(parameters.userId, out userId)) {
-                    return Response.AsJson(_weaveAdmin.DeleteUser(userId));
-                }
-
-                return HttpStatusCode.BadRequest;
+                return View["Login", model];
             };
 
             Get["/Logout"] = parameters => this.LogoutAndRedirect("Login");

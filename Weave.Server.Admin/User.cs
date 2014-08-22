@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 using System.Collections.Generic;
 using Nancy.Security;
 
-namespace Weave.Admin.Server {
+namespace Weave.Server.Admin {
     public class User : IUserIdentity {
         public string UserName { get; set; }
         public long UserId { get; set; }

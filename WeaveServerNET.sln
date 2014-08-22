@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30723.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.Core", "Weave.Core\Weave.Core.csproj", "{0826D506-3A67-4A33-8BEA-0A211AA9A153}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{35D861DF-810A-431C-AB01-E54A3A014E9A}"
@@ -10,32 +12,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{35D861
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.Admin.Server", "Weave.Admin.Server\Weave.Admin.Server.csproj", "{88ED0512-113E-482B-9D20-D510FC5E3E25}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.Server.Admin", "Weave.Server.Admin\Weave.Server.Admin.csproj", "{88ED0512-113E-482B-9D20-D510FC5E3E25}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.Server", "Weave.Server\Weave.Server.csproj", "{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.Console", "Weave.Console\Weave.Console.csproj", "{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.Service", "Weave.Service\Weave.Service.csproj", "{B76CE0D1-123A-43D2-9476-886A69F4D8CA}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.Admin.WebHost", "Weave.Admin.WebHost\Weave.Admin.WebHost.csproj", "{386F1139-65BD-403E-9343-83309CE68688}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weave.WebHost", "Weave.WebHost\Weave.WebHost.csproj", "{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SelfHost", "SelfHost", "{BF697BE4-18D1-4DBD-9EB5-E006938AE6F9}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WebHost", "WebHost", "{14FCE47C-51C5-42A9-8D79-CADA39BE0328}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Servers", "Servers", "{6B9E5040-E077-4AE0-8B89-BCB3AA9A70DC}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{265CBC67-1BF6-4486-9293-600976F4AA8B}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Config files", "Config files", "{95E5ACE8-310B-4933-9FEE-9BDEC304948C}"
-	ProjectSection(SolutionItems) = preProject
-		Configs\connectionStrings.config = Configs\connectionStrings.config
-		Configs\database.config = Configs\database.config
-		Configs\nlog.config = Configs\nlog.config
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,12 +29,6 @@ Global
 		SelfHost|Any CPU = SelfHost|Any CPU
 		SelfHost|Mixed Platforms = SelfHost|Mixed Platforms
 		SelfHost|x86 = SelfHost|x86
-		WebHost.Mono|Any CPU = WebHost.Mono|Any CPU
-		WebHost.Mono|Mixed Platforms = WebHost.Mono|Mixed Platforms
-		WebHost.Mono|x86 = WebHost.Mono|x86
-		WebHost|Any CPU = WebHost|Any CPU
-		WebHost|Mixed Platforms = WebHost|Mixed Platforms
-		WebHost|x86 = WebHost|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -71,16 +46,6 @@ Global
 		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.SelfHost|Mixed Platforms.ActiveCfg = SelfHost|Any CPU
 		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.SelfHost|Mixed Platforms.Build.0 = SelfHost|Any CPU
 		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.SelfHost|x86.ActiveCfg = SelfHost|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost.Mono|Any CPU.ActiveCfg = WebHost.Mono|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost.Mono|Any CPU.Build.0 = WebHost.Mono|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost.Mono|Mixed Platforms.ActiveCfg = WebHost.Mono|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost.Mono|Mixed Platforms.Build.0 = WebHost.Mono|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost.Mono|x86.ActiveCfg = WebHost.Mono|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost|Any CPU.ActiveCfg = WebHost|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost|Any CPU.Build.0 = WebHost|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost|Mixed Platforms.ActiveCfg = WebHost|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost|Mixed Platforms.Build.0 = WebHost|Any CPU
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153}.WebHost|x86.ActiveCfg = WebHost|Any CPU
 		{88ED0512-113E-482B-9D20-D510FC5E3E25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{88ED0512-113E-482B-9D20-D510FC5E3E25}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88ED0512-113E-482B-9D20-D510FC5E3E25}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -96,16 +61,6 @@ Global
 		{88ED0512-113E-482B-9D20-D510FC5E3E25}.SelfHost|Mixed Platforms.ActiveCfg = SelfHost|Any CPU
 		{88ED0512-113E-482B-9D20-D510FC5E3E25}.SelfHost|Mixed Platforms.Build.0 = SelfHost|Any CPU
 		{88ED0512-113E-482B-9D20-D510FC5E3E25}.SelfHost|x86.ActiveCfg = SelfHost|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost.Mono|Any CPU.ActiveCfg = WebHost.Mono|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost.Mono|Any CPU.Build.0 = WebHost.Mono|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost.Mono|Mixed Platforms.ActiveCfg = WebHost.Mono|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost.Mono|Mixed Platforms.Build.0 = WebHost.Mono|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost.Mono|x86.ActiveCfg = WebHost.Mono|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost|Any CPU.ActiveCfg = WebHost|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost|Any CPU.Build.0 = WebHost|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost|Mixed Platforms.ActiveCfg = WebHost|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost|Mixed Platforms.Build.0 = WebHost|Any CPU
-		{88ED0512-113E-482B-9D20-D510FC5E3E25}.WebHost|x86.ActiveCfg = WebHost|Any CPU
 		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -121,37 +76,6 @@ Global
 		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.SelfHost|Mixed Platforms.ActiveCfg = SelfHost|Any CPU
 		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.SelfHost|Mixed Platforms.Build.0 = SelfHost|Any CPU
 		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.SelfHost|x86.ActiveCfg = SelfHost|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost.Mono|Any CPU.ActiveCfg = WebHost.Mono|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost.Mono|Any CPU.Build.0 = WebHost.Mono|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost.Mono|Mixed Platforms.ActiveCfg = WebHost.Mono|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost.Mono|Mixed Platforms.Build.0 = WebHost.Mono|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost.Mono|x86.ActiveCfg = WebHost.Mono|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost|Any CPU.ActiveCfg = WebHost|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost|Any CPU.Build.0 = WebHost|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost|Mixed Platforms.ActiveCfg = WebHost|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost|Mixed Platforms.Build.0 = WebHost|Any CPU
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97}.WebHost|x86.ActiveCfg = WebHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost.Mono|Any CPU.ActiveCfg = SelfHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost.Mono|Any CPU.Build.0 = SelfHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost.Mono|Mixed Platforms.ActiveCfg = SelfHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost.Mono|Mixed Platforms.Build.0 = SelfHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost.Mono|x86.ActiveCfg = SelfHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost|Any CPU.ActiveCfg = SelfHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost|Any CPU.Build.0 = SelfHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost|Mixed Platforms.ActiveCfg = SelfHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost|Mixed Platforms.Build.0 = SelfHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.SelfHost|x86.ActiveCfg = SelfHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.WebHost.Mono|Any CPU.ActiveCfg = WebHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.WebHost.Mono|Mixed Platforms.ActiveCfg = WebHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.WebHost.Mono|x86.ActiveCfg = WebHost.Mono|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.WebHost|Any CPU.ActiveCfg = WebHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.WebHost|Mixed Platforms.ActiveCfg = WebHost|Any CPU
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848}.WebHost|x86.ActiveCfg = WebHost|Any CPU
 		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -167,68 +91,9 @@ Global
 		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.SelfHost|Mixed Platforms.ActiveCfg = SelfHost|Any CPU
 		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.SelfHost|Mixed Platforms.Build.0 = SelfHost|Any CPU
 		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.SelfHost|x86.ActiveCfg = SelfHost|Any CPU
-		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.WebHost.Mono|Any CPU.ActiveCfg = WebHost.Mono|Any CPU
-		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.WebHost.Mono|Mixed Platforms.ActiveCfg = WebHost.Mono|Any CPU
-		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.WebHost.Mono|x86.ActiveCfg = WebHost.Mono|Any CPU
-		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.WebHost|Any CPU.ActiveCfg = WebHost|Any CPU
-		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.WebHost|Mixed Platforms.ActiveCfg = WebHost|Any CPU
-		{B76CE0D1-123A-43D2-9476-886A69F4D8CA}.WebHost|x86.ActiveCfg = WebHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.SelfHost.Mono|Any CPU.ActiveCfg = SelfHost;Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.SelfHost.Mono|Any CPU.Build.0 = SelfHost;Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.SelfHost.Mono|Mixed Platforms.ActiveCfg = SelfHost;Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.SelfHost.Mono|x86.ActiveCfg = SelfHost;Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.SelfHost|Any CPU.ActiveCfg = SelfHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.SelfHost|Mixed Platforms.ActiveCfg = SelfHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.SelfHost|x86.ActiveCfg = SelfHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost.Mono|Any CPU.ActiveCfg = WebHost.Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost.Mono|Any CPU.Build.0 = WebHost.Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost.Mono|Mixed Platforms.ActiveCfg = WebHost.Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost.Mono|Mixed Platforms.Build.0 = WebHost.Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost.Mono|x86.ActiveCfg = WebHost.Mono|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost|Any CPU.ActiveCfg = WebHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost|Any CPU.Build.0 = WebHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost|Mixed Platforms.ActiveCfg = WebHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost|Mixed Platforms.Build.0 = WebHost|Any CPU
-		{386F1139-65BD-403E-9343-83309CE68688}.WebHost|x86.ActiveCfg = WebHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.SelfHost.Mono|Any CPU.ActiveCfg = SelfHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.SelfHost.Mono|Any CPU.Build.0 = SelfHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.SelfHost.Mono|Mixed Platforms.ActiveCfg = SelfHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.SelfHost.Mono|x86.ActiveCfg = SelfHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.SelfHost|Any CPU.ActiveCfg = SelfHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.SelfHost|Mixed Platforms.ActiveCfg = SelfHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.SelfHost|x86.ActiveCfg = SelfHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost.Mono|Any CPU.ActiveCfg = WebHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost.Mono|Any CPU.Build.0 = WebHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost.Mono|Mixed Platforms.ActiveCfg = WebHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost.Mono|Mixed Platforms.Build.0 = WebHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost.Mono|x86.ActiveCfg = WebHost.Mono|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost|Any CPU.ActiveCfg = WebHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost|Any CPU.Build.0 = WebHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost|Mixed Platforms.ActiveCfg = WebHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost|Mixed Platforms.Build.0 = WebHost|Any CPU
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC}.WebHost|x86.ActiveCfg = WebHost|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{0826D506-3A67-4A33-8BEA-0A211AA9A153} = {265CBC67-1BF6-4486-9293-600976F4AA8B}
-		{34318D5F-7817-4DBD-BC7A-7C4E113B3A97} = {6B9E5040-E077-4AE0-8B89-BCB3AA9A70DC}
-		{88ED0512-113E-482B-9D20-D510FC5E3E25} = {6B9E5040-E077-4AE0-8B89-BCB3AA9A70DC}
-		{B76CE0D1-123A-43D2-9476-886A69F4D8CA} = {BF697BE4-18D1-4DBD-9EB5-E006938AE6F9}
-		{EA96C3A3-21BF-473F-B8C6-CB314C2D7848} = {BF697BE4-18D1-4DBD-9EB5-E006938AE6F9}
-		{ABA0B6BA-973B-4411-8AFE-683D9152A8CC} = {14FCE47C-51C5-42A9-8D79-CADA39BE0328}
-		{386F1139-65BD-403E-9343-83309CE68688} = {14FCE47C-51C5-42A9-8D79-CADA39BE0328}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		VisualSVNWorkingCopyRoot = .

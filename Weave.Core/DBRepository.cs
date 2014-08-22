@@ -49,7 +49,7 @@ namespace Weave.Core {
 
 		public DBRepository() {
 			if (String.IsNullOrEmpty(ConnectionString) || _databaseType == DatabaseType.NA) {
-				_databaseType = ((WeaveConfigurationSection)ConfigurationManager.GetSection("WeaveDatabase")).DatabaseType;
+				_databaseType = ((WeaveConfigurationSection)ConfigurationManager.GetSection("weave")).DatabaseType;
 
 				if (_databaseType == DatabaseType.SQLite) {
 					string dir = "";
@@ -159,7 +159,7 @@ namespace Weave.Core {
 			}
 
 			using (var conn = GetConnection()) {
-				var result = conn.Query<long?>(sql, new { username = userName.ToLower(), md5 = hash }).SingleOrDefault();
+				var result = conn.Query < long?>(sql, new { username = userName.ToLower(), md5 = hash }).SingleOrDefault();
 				if (result != null) {
 					id = result.Value;
 				}

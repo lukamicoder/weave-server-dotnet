@@ -1,9 +1,9 @@
-﻿/* 
+﻿/*
 Weave Server.NET <http://code.google.com/p/weave-server-dotnet/>
 Copyright (C) 2013 Karoly Lukacs
 
 Based on code created by Mozilla Labs.
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -27,56 +27,58 @@ using Nancy;
 using Nancy.Bootstrapper;
 using Nancy.Diagnostics;
 using Nancy.TinyIoc;
+using Weave.Core;
+using Weave.Core.Models;
 
 namespace Weave.Server {
-    public class BootStrapper : DefaultNancyBootstrapper {
-        private static Logger _logger = LogManager.GetCurrentClassLogger();
+	public class BootStrapper : DefaultNancyBootstrapper {
+		private static Logger _logger = LogManager.GetCurrentClassLogger();
+		WeaveConfigurationSection _config = (WeaveConfigurationSection)ConfigurationManager.GetSection("weave");
 
-        protected override byte[] FavIcon {
-            get { return null; }
-        }
+		protected override byte[] FavIcon {
+			get { return null; }
+		}
 
-        // Register only NancyModules found in this assembly
-        protected override IEnumerable<ModuleRegistration> Modules {
-            get {
-                return GetType().Assembly.GetTypes().Where(type => type.BaseType == typeof(NancyModule))
-                                                    .NotOfType<DiagnosticModule>()
-                                                    .Select(t => new ModuleRegistration(t)).ToArray();
-            }
-        }
+		// Register only NancyModules found in this assembly
+		protected override IEnumerable<ModuleRegistration> Modules {
+			get {
+				return GetType().Assembly.GetTypes().Where(type => type.BaseType == typeof(NancyModule))
+				       .NotOfType<DiagnosticModule>()
+				       .Select(t => new ModuleRegistration(t)).ToArray();
+			}
+		}
 
-        protected override NancyInternalConfiguration InternalConfiguration {
-            get {
-                return NancyInternalConfiguration.WithOverrides(OnConfigurationBuilder);
-            }
-        }
+		protected override NancyInternalConfiguration InternalConfiguration {
+			get {
+				return NancyInternalConfiguration.WithOverrides(OnConfigurationBuilder);
+			}
+		}
 
-        protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines) {
-            string enableDebugging = ConfigurationManager.AppSettings["EnableDebugging"];
-            if (!String.IsNullOrEmpty(enableDebugging) && enableDebugging.ToLower() != "true") {
-                DiagnosticsHook.Disable(pipelines);
-            }
+		protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines) {
+			if (!_config.EnableDebug) {
+				DiagnosticsHook.Disable(pipelines);
+			}
 
-            _logger.Info("Weave webserver started.");
-        }
+			_logger.Info("Weave webserver started.");
+		}
 
-        protected override void RequestStartup(TinyIoCContainer container, IPipelines pipelines, NancyContext context) {
-            base.RequestStartup(container, pipelines, context);
+		protected override void RequestStartup(TinyIoCContainer container, IPipelines pipelines, NancyContext context) {
+			base.RequestStartup(container, pipelines, context);
 
-            pipelines.BeforeRequest.AddItemToStartOfPipeline(c => {
-                _logger.Trace(string.Format("Request {0} {1}", c.Request.Method, c.Request.Url));
-                return c.Response;
-            });
+			pipelines.BeforeRequest.AddItemToStartOfPipeline(c => {
+				_logger.Trace("Request {0} {1}", c.Request.Method, c.Request.Url);
+				return c.Response;
+			});
 
-            pipelines.AfterRequest.AddItemToEndOfPipeline(c => _logger.Trace(string.Format("Response {0} {1}", c.Response.StatusCode, c.Response.ContentType)));
-        }
+			pipelines.AfterRequest.AddItemToEndOfPipeline(c => _logger.Trace("Response {0} {1}", c.Response.StatusCode, c.Response.ContentType));
+		}
 
-        void OnConfigurationBuilder(NancyInternalConfiguration conf) {
-            conf.StatusCodeHandlers = new List<Type> { typeof(StatusCodeHandler) };
-        }
+		void OnConfigurationBuilder(NancyInternalConfiguration conf) {
+			conf.StatusCodeHandlers = new List<Type> { typeof(StatusCodeHandler) };
+		}
 
-        protected override DiagnosticsConfiguration DiagnosticsConfiguration {
-            get { return new DiagnosticsConfiguration { Password = ConfigurationManager.AppSettings["DiagnosticsPassword"] }; }
-        }
+		protected override DiagnosticsConfiguration DiagnosticsConfiguration {
+			get { return new DiagnosticsConfiguration { Password = _config.DiagPassword }; }
+		}
 	}
 }
