@@ -1,6 +1,6 @@
 ﻿/* 
 Weave Server.NET <http://code.google.com/p/weave-server-dotnet/>
-Copyright (C) 2013 Karoly Lukacs
+Copyright (C) 2014 Karoly Lukacs
 
 Based on code created by Mozilla Labs.
  
